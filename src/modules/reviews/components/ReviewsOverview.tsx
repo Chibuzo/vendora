@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 
 export function ReviewsOverview() {
   return (
@@ -6,7 +6,7 @@ export function ReviewsOverview() {
       <CardHeader>
         <CardTitle>Reviews and moderation</CardTitle>
       </CardHeader>
-      <CardContent className="text-sm text-slate-600">
+      <CardContent className="text-sm text-muted-foreground">
         Add buyer feedback streams, moderation queues, and review analytics in this domain.
       </CardContent>
     </Card>

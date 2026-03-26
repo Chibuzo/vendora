@@ -1,11 +1,14 @@
 import { VendorProfilePanel } from '@/modules/vendors';
+import { Badge } from '@/shared/components/ui/badge';
 
 export default function VendorDashboardPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <p className="text-sm uppercase tracking-[0.24em] text-brand-700">Vendor dashboard</p>
-        <h1 className="font-display text-3xl font-semibold text-ink">
+        <Badge variant="secondary" size="sm">
+          Vendor dashboard
+        </Badge>
+        <h1 className="font-display text-3xl font-semibold text-foreground">
           Monitor storefront health, trust, and fulfillment velocity.
         </h1>
       </div>

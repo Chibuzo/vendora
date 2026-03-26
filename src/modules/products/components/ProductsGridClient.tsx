@@ -6,7 +6,9 @@ import { ProductCard } from '@/modules/products/components/ProductCard';
 import { useProducts } from '@/modules/products/hooks/use-products';
 import { useProductFiltersStore } from '@/modules/products/store/use-product-filters-store';
 import type { Product } from '@/modules/products/types';
-import { Input } from '@/shared/components/ui/Input';
+import { Card, CardContent } from '@/shared/components/ui/card';
+import { Input } from '@/shared/components/ui/input';
+import { Select } from '@/shared/components/ui/select';
 
 export function ProductsGridClient({
   initialProducts
@@ -26,32 +28,32 @@ export function ProductsGridClient({
 
   return (
     <div className="space-y-6">
-      <div className="surface grid gap-4 p-5 md:grid-cols-[1fr_180px]">
-        <Input
-          label="Search inventory"
-          placeholder="Search by product, vendor, or category"
-          value={search}
-          onChange={(event) => {
-            const value = event.target.value;
-            startTransition(() => setSearch(value));
-          }}
-        />
-        <label className="space-y-2">
-          <span className="text-sm font-medium text-slate-700">Sort by</span>
-          <select
-            className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-brand-400 focus:ring-4 focus:ring-brand-100"
+      <Card className="bg-surface/90">
+        <CardContent className="grid gap-4 p-5 md:grid-cols-[1fr_220px]">
+          <Input
+            label="Search inventory"
+            placeholder="Search by product, vendor, or category"
+            value={search}
+            onChange={(event) => {
+              const value = event.target.value;
+              startTransition(() => setSearch(value));
+            }}
+          />
+          <Select
+            label="Sort by"
             value={sortBy}
-            onChange={(event) => setSortBy(event.target.value as typeof sortBy)}
-          >
-            <option value="featured">Featured</option>
-            <option value="trust">Trust score</option>
-            <option value="price-asc">Price: low to high</option>
-            <option value="price-desc">Price: high to low</option>
-          </select>
-        </label>
-      </div>
+            onValueChange={(value) => setSortBy(value as typeof sortBy)}
+            options={[
+              { value: 'featured', label: 'Featured' },
+              { value: 'trust', label: 'Trust score' },
+              { value: 'price-asc', label: 'Price: low to high' },
+              { value: 'price-desc', label: 'Price: high to low' }
+            ]}
+          />
+        </CardContent>
+      </Card>
 
-      {isFetching ? <p className="text-sm text-slate-500">Refreshing catalog...</p> : null}
+      {isFetching ? <p className="text-sm text-muted-foreground">Refreshing catalog...</p> : null}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {items.map((product) => (

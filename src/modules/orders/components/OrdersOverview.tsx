@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/Card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui/card';
 
 export function OrdersOverview() {
   return (
@@ -6,7 +6,7 @@ export function OrdersOverview() {
       <CardHeader>
         <CardTitle>Order history</CardTitle>
       </CardHeader>
-      <CardContent className="text-sm text-slate-600">
+      <CardContent className="text-sm text-muted-foreground">
         Route group and module boundaries are ready for customer order timelines, payment status,
         and fulfillment tracking.
       </CardContent>
