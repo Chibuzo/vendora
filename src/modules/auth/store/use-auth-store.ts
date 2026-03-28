@@ -7,7 +7,7 @@ import type { Session } from '@/lib/auth';
 interface AuthState {
   session: Session | null;
   isHydrated: boolean;
-  setSession: (session: Session) => void;
+  setSession: (session: Session | null) => void;
   setHydrated: (value: boolean) => void;
   clearSession: () => void;
 }

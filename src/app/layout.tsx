@@ -4,7 +4,8 @@ import { Inter, Manrope } from 'next/font/google';
 
 import '@/app/globals.css';
 
-import { AppProviders } from '@/components/providers/AppProviders';
+import { AuthProvider } from '@/components/providers/auth-provider';
+import { QueryProvider } from '@/components/providers/query-provider';
 import { readSessionState, SESSION_STATE_COOKIE } from '@/lib/auth';
 
 const sans = Inter({
@@ -19,7 +20,7 @@ const display = Manrope({
 
 export const metadata: Metadata = {
   title: 'Vendora',
-  description: 'Multi-tenant marketplace platform for customers, vendors, and operators.'
+  description: 'Multi-tenant marketplace platform for buyers, vendors, and operator workflows.'
 };
 
 export default async function RootLayout({
@@ -33,7 +34,9 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`${sans.variable} ${display.variable}`} data-tenant-theme="vendora">
       <body className="font-sans antialiased">
-        <AppProviders initialSession={initialSession}>{children}</AppProviders>
+        <QueryProvider>
+          <AuthProvider initialSession={initialSession}>{children}</AuthProvider>
+        </QueryProvider>
       </body>
     </html>
   );

@@ -1,13 +1,14 @@
 import type { NextResponse } from 'next/server';
 
 import { env } from '@/config/env';
+import { buyerProtectedRoutes, sharedProtectedRoutes, vendorProtectedRoutes } from '@/shared/constants/routes';
 
 export const SESSION_COOKIE = 'vendora_session';
 export const REFRESH_COOKIE = 'vendora_refresh';
 export const ROLE_COOKIE = 'vendora_role';
 export const SESSION_STATE_COOKIE = 'vendora_session_state';
 
-export type UserRole = 'customer' | 'vendor' | 'admin';
+export type UserRole = 'buyer' | 'vendor' | 'admin';
 
 export interface SessionUser {
   id: string;
@@ -30,21 +31,86 @@ export interface AuthCookiePayload {
 }
 
 const protectedRouteMap: Record<UserRole, string[]> = {
-  customer: ['/marketplace', '/orders'],
-  vendor: ['/marketplace', '/orders', '/vendor'],
-  admin: ['/marketplace', '/orders', '/vendor', '/admin']
+  buyer: [...buyerProtectedRoutes, ...sharedProtectedRoutes, '/onboarding'],
+  vendor: [...vendorProtectedRoutes, ...sharedProtectedRoutes, '/onboarding'],
+  admin: [...buyerProtectedRoutes, ...vendorProtectedRoutes, ...sharedProtectedRoutes, '/onboarding', '/admin']
 };
 
+const ROLE_ALIASES: Record<string, UserRole> = {
+  BUYER: 'buyer',
+  buyer: 'buyer',
+  customer: 'buyer',
+  VENDOR: 'vendor',
+  vendor: 'vendor',
+  ADMIN: 'admin',
+  admin: 'admin'
+};
+
+export function normalizeUserRole(value?: string | null): UserRole | null {
+  if (!value) {
+    return null;
+  }
+
+  return ROLE_ALIASES[value] ?? null;
+}
+
 export function isUserRole(value: string): value is UserRole {
-  return ['customer', 'vendor', 'admin'].includes(value);
+  return normalizeUserRole(value) !== null;
+}
+
+export function normalizeSessionUser(payload: unknown): SessionUser | null {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const candidate = payload as Partial<SessionUser>;
+  const role = normalizeUserRole(typeof candidate.role === 'string' ? candidate.role : null);
+
+  if (
+    !role ||
+    typeof candidate.id !== 'string' ||
+    typeof candidate.name !== 'string' ||
+    typeof candidate.email !== 'string'
+  ) {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    name: candidate.name,
+    role,
+    email: candidate.email,
+    tenantId: typeof candidate.tenantId === 'string' ? candidate.tenantId : undefined
+  };
+}
+
+export function normalizeSession(payload: unknown): Session | null {
+  if (!payload || typeof payload !== 'object') {
+    return null;
+  }
+
+  const candidate = payload as Partial<Session>;
+  const user = normalizeSessionUser(candidate.user);
+
+  if (!user || typeof candidate.token !== 'string' || typeof candidate.expiresAt !== 'string') {
+    return null;
+  }
+
+  return {
+    token: candidate.token,
+    expiresAt: candidate.expiresAt,
+    user
+  };
 }
 
 export function canAccessPath(role: string | undefined, pathname: string) {
-  if (!role || !isUserRole(role)) {
+  const normalizedRole = normalizeUserRole(role);
+
+  if (!normalizedRole) {
     return false;
   }
 
-  return protectedRouteMap[role].some((segment) => pathname.startsWith(segment));
+  return protectedRouteMap[normalizedRole].some((segment) => pathname.startsWith(segment));
 }
 
 export function getLoginRedirectUrl(pathname: string) {
@@ -66,20 +132,11 @@ export function readSessionState(value?: string | null) {
 
   try {
     const decoded = decodeURIComponent(value);
-    const parsed = JSON.parse(decoded) as Session;
-
-    if (
-      typeof parsed?.token === 'string' &&
-      typeof parsed?.expiresAt === 'string' &&
-      typeof parsed?.user?.role === 'string'
-    ) {
-      return parsed;
-    }
+    const parsed = JSON.parse(decoded) as unknown;
+    return normalizeSession(parsed);
   } catch {
     return null;
   }
-
-  return null;
 }
 
 export function clearSessionCookies(response: NextResponse) {
@@ -98,8 +155,13 @@ export function setSessionCookies(response: NextResponse, payload: AuthCookiePay
   const secure = env.NODE_ENV === 'production';
   const sessionExpiry = new Date(payload.session.expiresAt);
   const refreshExpiry = new Date(payload.refreshTokenExpiresAt);
+  const normalizedSession = normalizeSession(payload.session);
 
-  response.cookies.set(SESSION_COOKIE, payload.session.token, {
+  if (!normalizedSession) {
+    throw new Error('Invalid session payload.');
+  }
+
+  response.cookies.set(SESSION_COOKIE, normalizedSession.token, {
     httpOnly: true,
     secure,
     sameSite: 'lax',
@@ -115,7 +177,7 @@ export function setSessionCookies(response: NextResponse, payload: AuthCookiePay
     expires: refreshExpiry
   });
 
-  response.cookies.set(ROLE_COOKIE, payload.session.user.role, {
+  response.cookies.set(ROLE_COOKIE, normalizedSession.user.role, {
     httpOnly: true,
     secure,
     sameSite: 'lax',
@@ -123,7 +185,7 @@ export function setSessionCookies(response: NextResponse, payload: AuthCookiePay
     expires: refreshExpiry
   });
 
-  response.cookies.set(SESSION_STATE_COOKIE, serializeSession(payload.session), {
+  response.cookies.set(SESSION_STATE_COOKIE, serializeSession(normalizedSession), {
     httpOnly: true,
     secure,
     sameSite: 'lax',

@@ -1,8 +1,16 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-import { canAccessPath, getLoginRedirectUrl, REFRESH_COOKIE, ROLE_COOKIE, SESSION_COOKIE } from '@/lib/auth';
+import {
+  canAccessPath,
+  getLoginRedirectUrl,
+  normalizeUserRole,
+  REFRESH_COOKIE,
+  ROLE_COOKIE,
+  SESSION_COOKIE
+} from '@/lib/auth';
 import { resolveTenant } from '@/lib/tenant';
+import { routes } from '@/shared/constants/routes';
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -25,7 +33,14 @@ export function middleware(request: NextRequest) {
   const isProtected =
     pathname.startsWith('/vendor') ||
     pathname.startsWith('/admin') ||
-    pathname.startsWith('/orders');
+    pathname.startsWith('/onboarding') ||
+    pathname.startsWith('/home') ||
+    pathname.startsWith('/cart') ||
+    pathname.startsWith('/checkout') ||
+    pathname.startsWith('/orders') ||
+    pathname.startsWith('/account') ||
+    pathname.startsWith('/notifications') ||
+    pathname.startsWith('/profile');
 
   if (isProtected && !hasSession && !hasRefreshToken) {
     return NextResponse.redirect(new URL(getLoginRedirectUrl(pathname), request.url));
@@ -36,7 +51,15 @@ export function middleware(request: NextRequest) {
   }
 
   if (isProtected && !canAccessPath(role, pathname)) {
-    return NextResponse.redirect(new URL('/marketplace', request.url));
+    const normalizedRole = normalizeUserRole(role);
+    const fallback =
+      normalizedRole === 'vendor'
+        ? routes.vendor.dashboard
+        : normalizedRole === 'admin'
+          ? routes.admin.dashboard
+          : routes.buyer.home;
+
+    return NextResponse.redirect(new URL(fallback, request.url));
   }
 
   return NextResponse.next({

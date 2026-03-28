@@ -7,8 +7,14 @@ import { useForm } from 'react-hook-form';
 import type { ZodIssue } from 'zod';
 
 import { useAuth } from '@/modules/auth/hooks/use-auth';
+import { getAuthenticatedLandingRoute } from '@/modules/onboarding/lib/onboarding';
+import {
+  selectOnboardingSnapshot,
+  useOnboardingStore
+} from '@/modules/onboarding/store/use-onboarding-store';
 import { loginSchema, requestOtpSchema } from '@/modules/auth/services/auth-service';
 import type { LoginInput, OtpChallenge, RequestOtpInput } from '@/modules/auth/types';
+import { routes } from '@/shared/constants/routes';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 
@@ -24,7 +30,7 @@ function getFieldError(issues: ZodIssue[], field: keyof LoginInput | keyof Reque
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = (searchParams.get('redirectTo') ?? '/marketplace') as Route;
+  const redirectTo = searchParams.get('redirectTo');
   const {
     requestOtp,
     login,
@@ -33,6 +39,7 @@ export function LoginForm() {
     requestOtpError,
     loginError
   } = useAuth();
+  const initializeForSession = useOnboardingStore((state) => state.initializeForSession);
   const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
   const [countdown, setCountdown] = useState(0);
 
@@ -63,20 +70,11 @@ export function LoginForm() {
 
   const handleSuccessfulLogin = async (payload: LoginInput) => {
     const session = await login(payload);
+    initializeForSession(session);
+    const destination =
+      redirectTo || getAuthenticatedLandingRoute(session, selectOnboardingSnapshot(useOnboardingStore.getState()));
 
-    if (session.user.role === 'vendor') {
-      router.push('/vendor/dashboard' as Route);
-      router.refresh();
-      return;
-    }
-
-    if (session.user.role === 'admin') {
-      router.push('/admin/dashboard' as Route);
-      router.refresh();
-      return;
-    }
-
-    router.push(redirectTo);
+    router.push((destination || routes.buyer.home) as Route);
     router.refresh();
   };
 

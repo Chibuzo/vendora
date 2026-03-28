@@ -29,7 +29,7 @@ export function AuthLayout({ eyebrow, title, description, children, aside }: Rea
               <ShieldCheck className="h-5 w-5 text-white/80" />
               <p className="mt-4 text-sm font-semibold">Tenant-safe access</p>
               <p className="mt-2 text-sm leading-6 text-white/65">
-                Sessions, routing, and role separation stay consistent across customer, vendor, and admin surfaces.
+                Sessions, routing, and role separation stay consistent across buyer, vendor, and admin surfaces.
               </p>
             </div>
             <div className="rounded-[var(--radius-xl)] border border-white/10 bg-white/5 p-5">

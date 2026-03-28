@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 
 import type { Session } from '@/lib/auth';
+import { clearAuth, setAuth } from '@/lib/api/client';
 import { getSession } from '@/modules/auth/api/get-session';
 import { refreshSession } from '@/modules/auth/api/refresh-session';
 import { useAuthStore } from '@/modules/auth/store/use-auth-store';
@@ -16,6 +17,27 @@ export function AuthBootstrap({ initialSession }: Readonly<AuthBootstrapProps>) 
   const setSession = useAuthStore((state) => state.setSession);
   const clearSession = useAuthStore((state) => state.clearSession);
   const setHydrated = useAuthStore((state) => state.setHydrated);
+
+  useEffect(() => {
+    if (!session) {
+      clearAuth();
+      return;
+    }
+
+    setAuth({
+      accessToken: session.token,
+      user: {
+        id: session.user.id,
+        email: session.user.email,
+        fullName: session.user.name,
+        authProvider: 'EMAIL',
+        role: session.user.role.toUpperCase() as 'BUYER' | 'VENDOR' | 'ADMIN',
+        isVerified: true,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      }
+    });
+  }, [session]);
 
   useEffect(() => {
     if (initialSession) {

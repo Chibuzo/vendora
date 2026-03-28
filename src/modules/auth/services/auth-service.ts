@@ -1,6 +1,13 @@
 import { z } from 'zod';
 
-import type { AuthCookiePayload, Session, SessionUser, UserRole } from '@/lib/auth';
+import {
+  normalizeSession,
+  normalizeSessionUser,
+  type AuthCookiePayload,
+  type Session,
+  type SessionUser,
+  type UserRole
+} from '@/lib/auth';
 import type { OtpChallenge, RequestOtpResponse } from '@/modules/auth/types';
 
 const OTP_CODE = '123456';
@@ -77,7 +84,7 @@ function resolveRole(identifier: string): UserRole {
         return 'vendor';
     }
 
-    return 'customer';
+    return 'buyer';
 }
 
 function maskIdentifier(identifier: string) {
@@ -107,7 +114,7 @@ function buildMockSession(identifier: string, role: UserRole, user: SessionUser)
 function createMockUser(identifier: string, role: UserRole): SessionUser {
     return {
         id: `${role}_001`,
-        name: role === 'customer' ? 'Marketplace Buyer' : `${role[0].toUpperCase()}${role.slice(1)} User`,
+        name: role === 'buyer' ? 'Marketplace Buyer' : `${role[0].toUpperCase()}${role.slice(1)} User`,
         role,
         email: identifier,
         tenantId: 'core'
@@ -144,31 +151,6 @@ function toOtpChallenge(record: MockOtpChallengeRecord): OtpChallenge {
         expiresAt: new Date(record.expiresAt).toISOString(),
         resendAvailableAt: new Date(record.resendAvailableAt).toISOString()
     };
-}
-
-function isSessionUser(payload: unknown): payload is SessionUser {
-    if (!payload || typeof payload !== 'object') {
-        return false;
-    }
-
-    const candidate = payload as SessionUser;
-
-    return (
-        typeof candidate.id === 'string' &&
-        typeof candidate.name === 'string' &&
-        typeof candidate.role === 'string' &&
-        typeof candidate.email === 'string'
-    );
-}
-
-function isSession(payload: unknown): payload is Session {
-    if (!payload || typeof payload !== 'object') {
-        return false;
-    }
-
-    const candidate = payload as Session;
-
-    return typeof candidate.token === 'string' && typeof candidate.expiresAt === 'string' && isSessionUser(candidate.user);
 }
 
 export function createMockOtpChallenge(identifier: string): RequestOtpResponse {
@@ -260,19 +242,18 @@ export function coerceOtpChallenge(payload: unknown): RequestOtpResponse {
 
 export function coerceAuthPayload(payload: unknown, currentRefreshToken?: string | null): AuthCookiePayload {
     const candidate = payload as AuthPayloadShape;
-    const resolvedSession = isSession(candidate?.session)
-        ? candidate.session
-        : isSession(payload)
-            ? payload
-            : typeof candidate?.accessToken === 'string' &&
-                typeof candidate?.accessTokenExpiresAt === 'string' &&
-                isSessionUser(candidate?.user)
-                ? ({
-                    token: candidate.accessToken,
-                    expiresAt: candidate.accessTokenExpiresAt,
-                    user: candidate.user
-                } satisfies Session)
-                : null;
+    const resolvedSession =
+        normalizeSession(candidate?.session) ??
+        normalizeSession(payload) ??
+        (typeof candidate?.accessToken === 'string' &&
+        typeof candidate?.accessTokenExpiresAt === 'string' &&
+        normalizeSessionUser(candidate?.user)
+            ? ({
+                token: candidate.accessToken,
+                expiresAt: candidate.accessTokenExpiresAt,
+                user: normalizeSessionUser(candidate.user)!
+            } satisfies Session)
+            : null);
 
     if (!resolvedSession) {
         throw new AuthServiceError('Backend did not return a valid session payload.', 'INVALID_AUTH_RESPONSE', 502);
