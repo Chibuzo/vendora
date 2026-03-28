@@ -6,12 +6,13 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
 
-const avatarVariants = cva('inline-flex shrink-0 overflow-hidden rounded-[var(--radius-xl)] bg-neutral-200', {
+const avatarVariants = cva('inline-flex shrink-0 overflow-hidden rounded-[var(--radius-xl)] border border-border/60 bg-neutral-200', {
   variants: {
     size: {
       sm: 'h-9 w-9',
       md: 'h-11 w-11',
-      lg: 'h-14 w-14'
+      lg: 'h-14 w-14',
+      xl: 'h-16 w-16'
     }
   },
   defaultVariants: {

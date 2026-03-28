@@ -48,6 +48,7 @@ export const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           id={textareaId}
           aria-invalid={Boolean(error)}
           aria-describedby={describedBy}
+          disabled={props.disabled}
           className={cn(textareaVariants({ size, state: error ? 'error' : state }), className)}
           {...props}
         />

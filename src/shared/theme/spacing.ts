@@ -7,7 +7,9 @@ export const spacing = {
   4: '1rem',
   5: '1.25rem',
   6: '1.5rem',
+  7: '1.75rem',
   8: '2rem',
+  9: '2.25rem',
   10: '2.5rem',
   12: '3rem',
   14: '3.5rem',
@@ -17,9 +19,9 @@ export const spacing = {
 } as const;
 
 export const radii = {
-  sm: '0.75rem',
-  md: '1rem',
-  lg: '1.25rem',
+  sm: '0.375rem',
+  md: '0.625rem',
+  lg: '1rem',
   xl: '1.5rem',
   '2xl': '2rem',
   pill: '999px'

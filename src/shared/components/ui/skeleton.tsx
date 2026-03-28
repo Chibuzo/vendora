@@ -4,7 +4,7 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const skeletonVariants = cva(
-  'relative overflow-hidden rounded-[var(--radius-lg)] bg-neutral-200/80 before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/60 before:to-transparent',
+  'relative overflow-hidden rounded-[var(--radius-lg)] bg-neutral-200/80 before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/70 before:to-transparent',
   {
     variants: {
       variant: {

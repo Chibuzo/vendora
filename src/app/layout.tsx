@@ -7,6 +7,7 @@ import '@/app/globals.css';
 import { AuthProvider } from '@/components/providers/auth-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { readSessionState, SESSION_STATE_COOKIE } from '@/lib/auth';
+import { ToastProvider } from '@/shared/components/feedback/toast';
 
 const sans = Inter({
   subsets: ['latin'],
@@ -35,7 +36,9 @@ export default async function RootLayout({
     <html lang="en" className={`${sans.variable} ${display.variable}`} data-tenant-theme="vendora">
       <body className="font-sans antialiased">
         <QueryProvider>
-          <AuthProvider initialSession={initialSession}>{children}</AuthProvider>
+          <AuthProvider initialSession={initialSession}>
+            <ToastProvider>{children}</ToastProvider>
+          </AuthProvider>
         </QueryProvider>
       </body>
     </html>

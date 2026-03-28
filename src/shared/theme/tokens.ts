@@ -24,6 +24,8 @@ const colorVariables = {
   '--warning-foreground': colors.semantic['warning-foreground'],
   '--danger': colors.semantic.danger,
   '--danger-foreground': colors.semantic['danger-foreground'],
+  '--info': colors.semantic.info,
+  '--info-foreground': colors.semantic['info-foreground'],
   '--card': colors.semantic.card,
   '--card-foreground': colors.semantic['card-foreground'],
   '--overlay': colors.semantic.overlay,
@@ -32,7 +34,7 @@ const colorVariables = {
 } as const;
 
 const scaleVariables = Object.fromEntries(
-  (['neutral', 'primary', 'accent', 'success', 'warning', 'danger'] as const).flatMap((scale) =>
+  (['neutral', 'primary', 'accent', 'info', 'success', 'warning', 'danger'] as const).flatMap((scale) =>
     Object.entries(colors[scale]).map(([step, value]) => [`--color-${scale}-${step}`, value])
   )
 ) as Record<`--color-${string}`, string>;

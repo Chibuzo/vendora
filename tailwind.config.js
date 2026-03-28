@@ -55,29 +55,58 @@ module.exports = {
         success: {
           DEFAULT: "hsl(var(--success) / <alpha-value>)",
           foreground: "hsl(var(--success-foreground) / <alpha-value>)",
+          50: "hsl(var(--color-success-50) / <alpha-value>)",
           100: "hsl(var(--color-success-100) / <alpha-value>)",
+          200: "hsl(var(--color-success-200) / <alpha-value>)",
           300: "hsl(var(--color-success-300) / <alpha-value>)",
+          400: "hsl(var(--color-success-400) / <alpha-value>)",
+          500: "hsl(var(--color-success-500) / <alpha-value>)",
           600: "hsl(var(--color-success-600) / <alpha-value>)",
           700: "hsl(var(--color-success-700) / <alpha-value>)",
-          800: "hsl(var(--color-success-800) / <alpha-value>)"
+          800: "hsl(var(--color-success-800) / <alpha-value>)",
+          900: "hsl(var(--color-success-900) / <alpha-value>)"
+        },
+        info: {
+          DEFAULT: "hsl(var(--info) / <alpha-value>)",
+          foreground: "hsl(var(--info-foreground) / <alpha-value>)",
+          50: "hsl(var(--color-info-50) / <alpha-value>)",
+          100: "hsl(var(--color-info-100) / <alpha-value>)",
+          200: "hsl(var(--color-info-200) / <alpha-value>)",
+          300: "hsl(var(--color-info-300) / <alpha-value>)",
+          400: "hsl(var(--color-info-400) / <alpha-value>)",
+          500: "hsl(var(--color-info-500) / <alpha-value>)",
+          600: "hsl(var(--color-info-600) / <alpha-value>)",
+          700: "hsl(var(--color-info-700) / <alpha-value>)",
+          800: "hsl(var(--color-info-800) / <alpha-value>)",
+          900: "hsl(var(--color-info-900) / <alpha-value>)"
         },
         warning: {
           DEFAULT: "hsl(var(--warning) / <alpha-value>)",
           foreground: "hsl(var(--warning-foreground) / <alpha-value>)",
+          50: "hsl(var(--color-warning-50) / <alpha-value>)",
           100: "hsl(var(--color-warning-100) / <alpha-value>)",
+          200: "hsl(var(--color-warning-200) / <alpha-value>)",
           300: "hsl(var(--color-warning-300) / <alpha-value>)",
+          400: "hsl(var(--color-warning-400) / <alpha-value>)",
+          500: "hsl(var(--color-warning-500) / <alpha-value>)",
           600: "hsl(var(--color-warning-600) / <alpha-value>)",
           700: "hsl(var(--color-warning-700) / <alpha-value>)",
-          800: "hsl(var(--color-warning-800) / <alpha-value>)"
+          800: "hsl(var(--color-warning-800) / <alpha-value>)",
+          900: "hsl(var(--color-warning-900) / <alpha-value>)"
         },
         danger: {
           DEFAULT: "hsl(var(--danger) / <alpha-value>)",
           foreground: "hsl(var(--danger-foreground) / <alpha-value>)",
+          50: "hsl(var(--color-danger-50) / <alpha-value>)",
           100: "hsl(var(--color-danger-100) / <alpha-value>)",
+          200: "hsl(var(--color-danger-200) / <alpha-value>)",
           300: "hsl(var(--color-danger-300) / <alpha-value>)",
+          400: "hsl(var(--color-danger-400) / <alpha-value>)",
+          500: "hsl(var(--color-danger-500) / <alpha-value>)",
           600: "hsl(var(--color-danger-600) / <alpha-value>)",
           700: "hsl(var(--color-danger-700) / <alpha-value>)",
-          800: "hsl(var(--color-danger-800) / <alpha-value>)"
+          800: "hsl(var(--color-danger-800) / <alpha-value>)",
+          900: "hsl(var(--color-danger-900) / <alpha-value>)"
         },
         neutral: {
           50: "hsl(var(--color-neutral-50) / <alpha-value>)",
@@ -111,9 +140,9 @@ module.exports = {
       },
       backgroundImage: {
         "hero-glow":
-          "radial-gradient(circle at top left, hsl(var(--color-primary-100) / 0.9), transparent 42%), radial-gradient(circle at bottom right, hsl(var(--color-accent-100) / 0.65), transparent 40%)",
+          "radial-gradient(circle at top left, hsl(var(--color-primary-100) / 0.92), transparent 42%), radial-gradient(circle at bottom right, hsl(var(--color-accent-100) / 0.72), transparent 38%)",
         "panel-grid":
-          "linear-gradient(hsl(var(--color-neutral-200) / 0.45) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--color-neutral-200) / 0.45) 1px, transparent 1px)"
+          "linear-gradient(hsl(var(--color-neutral-200) / 0.5) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--color-neutral-200) / 0.5) 1px, transparent 1px)"
       },
       keyframes: {
         shimmer: {

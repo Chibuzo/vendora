@@ -3,8 +3,8 @@ import { cva, type VariantProps } from 'class-variance-authority';
 
 import { cn } from '@/lib/utils';
 
-const inputVariants = cva(
-  'flex w-full rounded-[var(--radius-lg)] border bg-surface text-sm text-foreground shadow-soft-xs transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-muted-foreground/80 focus-within:border-primary-300 focus-within:ring-4 focus-within:ring-ring/30',
+export const inputShellVariants = cva(
+  'flex w-full items-center rounded-[var(--radius-lg)] border bg-surface text-sm text-foreground shadow-soft-xs transition-[border-color,box-shadow,background-color] duration-200 placeholder:text-muted-foreground/80 focus-within:border-primary-300 focus-within:ring-4 focus-within:ring-ring/30',
   {
     variants: {
       size: {
@@ -27,12 +27,13 @@ const inputVariants = cva(
 
 export interface InputProps
   extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
-    VariantProps<typeof inputVariants> {
+    VariantProps<typeof inputShellVariants> {
   label?: string;
   helperText?: string;
   error?: string;
   leadingIcon?: React.ReactNode;
   trailingIcon?: React.ReactNode;
+  containerClassName?: string;
 }
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
@@ -48,6 +49,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
       disabled,
       size,
       state,
+      containerClassName,
       ...props
     },
     ref
@@ -62,7 +64,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <label htmlFor={inputId} className="grid gap-2">
         {label ? <span className="text-sm font-medium text-foreground">{label}</span> : null}
-        <span className={cn(inputVariants({ size, state: resolvedState }), className)}>
+        <span className={cn(inputShellVariants({ size, state: resolvedState }), containerClassName)}>
           {leadingIcon ? <span className="mr-2 flex items-center text-muted-foreground">{leadingIcon}</span> : null}
           <input
             ref={ref}
@@ -70,7 +72,7 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
             disabled={disabled}
             aria-invalid={Boolean(error)}
             aria-describedby={describedBy}
-            className="h-full flex-1 bg-transparent outline-none disabled:cursor-not-allowed"
+            className={cn('h-full flex-1 bg-transparent outline-none disabled:cursor-not-allowed', className)}
             {...props}
           />
           {trailingIcon ? <span className="ml-2 flex items-center text-muted-foreground">{trailingIcon}</span> : null}

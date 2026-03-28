@@ -2,14 +2,15 @@ import type { Route } from 'next';
 import Link from 'next/link';
 import { ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
 
-import { mockProducts } from '@/shared/constants/mock-data';
 import { vendorDirectory } from '@/shared/constants/route-fixtures';
 import { routes } from '@/shared/constants/routes';
-import { ProductCard } from '@/modules/products/components/ProductCard';
 import { SectionIntro } from '@/shared/components/layout/section-intro';
+import { ProductCard } from '@/shared/components/marketplace/product-card';
+import { VendorCard } from '@/shared/components/marketplace/vendor-card';
+import { DesignSystemShowcase } from '@/shared/components/showcase/design-system-showcase';
 import { Badge } from '@/shared/components/ui/badge';
 import { buttonVariants } from '@/shared/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { mockProducts } from '@/shared/constants/mock-data';
 
 export default function HomePage() {
   return (
@@ -60,26 +61,21 @@ export default function HomePage() {
         <SectionIntro
           eyebrow="Featured vendors"
           title="Verified operators ready for repeat buyers."
-          description="Public vendor detail routes give buyers enough trust context before crossing into authenticated flows."
+          description="Public vendor detail routes surface credibility signals before buyers commit to a transaction."
         />
         <div className="grid gap-6 lg:grid-cols-3">
           {vendorDirectory.map((vendor) => (
-            <Card key={vendor.slug} hover>
-              <CardHeader>
-                <Badge variant="primary">Trust {vendor.trustScore}</Badge>
-                <CardTitle className="mt-3">{vendor.name}</CardTitle>
-                <CardDescription>{vendor.specialty}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <p className="text-sm leading-6 text-muted-foreground">{vendor.description}</p>
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <span>{vendor.location}</span>
-                  <Link href={routes.public.vendorDetail(vendor.slug) as Route} className="font-medium text-primary-700">
-                    View vendor
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
+            <VendorCard
+              key={vendor.slug}
+              businessName={vendor.name}
+              trustScore={vendor.trustScore}
+              rating={Math.min(5, Math.max(4.1, vendor.trustScore / 20))}
+              reviewCount={Math.round(vendor.trustScore * 1.2)}
+              location={vendor.location}
+              verificationStatus={vendor.trustScore >= 92 ? 'verified' : 'high-trust'}
+              tagline={vendor.specialty}
+              href={routes.public.vendorDetail(vendor.slug)}
+            />
           ))}
         </div>
       </section>
@@ -91,11 +87,25 @@ export default function HomePage() {
           description="Products can be explored without loading buyer or vendor-specific chrome."
         />
         <div className="grid gap-6 lg:grid-cols-3">
-          {mockProducts.slice(0, 3).map((product) => (
-            <ProductCard key={product.id} product={product} />
+          {mockProducts.slice(0, 3).map((product, index) => (
+            <ProductCard
+              key={product.id}
+              image={product.imageUrl}
+              name={product.name}
+              price={product.price}
+              currency={product.currency}
+              vendor={product.vendorName}
+              rating={4.2 + index * 0.2}
+              reviewCount={44 + index * 21}
+              trustStatus={product.trustScore >= 92 ? 'verified' : 'high-trust'}
+              description={product.description}
+              category={product.category}
+            />
           ))}
         </div>
       </section>
+
+      <DesignSystemShowcase />
     </div>
   );
 }
