@@ -1,39 +1,300 @@
 import { z } from 'zod';
 
-import type { Session, UserRole } from '@/lib/auth';
+import type { AuthCookiePayload, Session, SessionUser, UserRole } from '@/lib/auth';
+import type { OtpChallenge, RequestOtpResponse } from '@/modules/auth/types';
 
-export const loginSchema = z.object({
-  identifier: z.string().min(3, 'Enter a valid email or phone number.'),
-  otp: z
-    .string()
-    .length(6, 'OTP must contain 6 digits.')
-    .refine((value) => /^\d+$/.test(value), 'OTP must contain only digits.')
+const OTP_CODE = '123456';
+const OTP_TTL_MS = 1000 * 60 * 5;
+const RESEND_COOLDOWN_MS = 1000 * 30;
+const ACCESS_TOKEN_TTL_MS = 1000 * 60 * 15;
+const REFRESH_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 7;
+
+interface MockOtpChallengeRecord {
+    challengeId: string;
+    identifier: string;
+    code: string;
+    expiresAt: number;
+    resendAvailableAt: number;
+}
+
+interface MockRefreshSessionRecord {
+    identifier: string;
+    role: UserRole;
+    user: SessionUser;
+    expiresAt: number;
+}
+
+type AuthPayloadShape = {
+    session?: unknown;
+    refreshToken?: unknown;
+    refreshTokenExpiresAt?: unknown;
+    token?: unknown;
+    expiresAt?: unknown;
+    user?: unknown;
+    accessToken?: unknown;
+    accessTokenExpiresAt?: unknown;
+    tokens?: {
+        refreshToken?: unknown;
+        refreshTokenExpiresAt?: unknown;
+        accessToken?: unknown;
+        accessTokenExpiresAt?: unknown;
+    };
+};
+
+const mockOtpChallenges = new Map<string, MockOtpChallengeRecord>();
+const mockRefreshSessions = new Map<string, MockRefreshSessionRecord>();
+
+export class AuthServiceError extends Error {
+    constructor(
+        message: string,
+        public readonly code: string,
+        public readonly status: number
+    ) {
+        super(message);
+        this.name = 'AuthServiceError';
+    }
+}
+
+export const requestOtpSchema = z.object({
+    identifier: z.string().trim().min(3, 'Enter a valid email or phone number.')
+});
+
+export const loginSchema = requestOtpSchema.extend({
+    challengeId: z.string().trim().min(1, 'Request an OTP before continuing.'),
+    otp: z
+        .string()
+        .trim()
+        .length(6, 'OTP must contain 6 digits.')
+        .refine((value) => /^\d+$/.test(value), 'OTP must contain only digits.')
 });
 
 function resolveRole(identifier: string): UserRole {
-  if (identifier.includes('admin')) {
-    return 'admin';
-  }
+    if (identifier.includes('admin')) {
+        return 'admin';
+    }
 
-  if (identifier.includes('vendor')) {
-    return 'vendor';
-  }
+    if (identifier.includes('vendor')) {
+        return 'vendor';
+    }
 
-  return 'customer';
+    return 'customer';
 }
 
-export function createMockSession(identifier: string): Session {
-  const role = resolveRole(identifier.toLowerCase());
-
-  return {
-    token: `mock_session_${role}`,
-    expiresAt: new Date(Date.now() + 1000 * 60 * 60 * 8).toISOString(),
-    user: {
-      id: `${role}_001`,
-      name: role === 'customer' ? 'Marketplace Buyer' : `${role[0].toUpperCase()}${role.slice(1)} User`,
-      role,
-      email: identifier,
-      tenantId: 'core'
+function maskIdentifier(identifier: string) {
+    if (identifier.includes('@')) {
+        const [localPart, domain] = identifier.split('@');
+        const maskedLocal = localPart.length <= 2 ? `${localPart[0] ?? ''}*` : `${localPart.slice(0, 2)}***`;
+        return `${maskedLocal}@${domain}`;
     }
-  };
+
+    const trimmed = identifier.replace(/\s+/g, '');
+
+    if (trimmed.length <= 4) {
+        return `${trimmed.slice(0, 1)}***`;
+    }
+
+    return `${trimmed.slice(0, 2)}***${trimmed.slice(-2)}`;
+}
+
+function buildMockSession(identifier: string, role: UserRole, user: SessionUser): Session {
+    return {
+        token: `mock_access_${role}_${crypto.randomUUID()}`,
+        expiresAt: new Date(Date.now() + ACCESS_TOKEN_TTL_MS).toISOString(),
+        user
+    };
+}
+
+function createMockUser(identifier: string, role: UserRole): SessionUser {
+    return {
+        id: `${role}_001`,
+        name: role === 'customer' ? 'Marketplace Buyer' : `${role[0].toUpperCase()}${role.slice(1)} User`,
+        role,
+        email: identifier,
+        tenantId: 'core'
+    };
+}
+
+function createMockAuthPayload(identifier: string): AuthCookiePayload {
+    const normalizedIdentifier = identifier.toLowerCase();
+    const role = resolveRole(normalizedIdentifier);
+    const user = createMockUser(identifier, role);
+    const refreshToken = `mock_refresh_${role}_${crypto.randomUUID()}`;
+    const refreshTokenExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS).toISOString();
+    const session = buildMockSession(identifier, role, user);
+
+    mockRefreshSessions.set(refreshToken, {
+        identifier,
+        role,
+        user,
+        expiresAt: Date.parse(refreshTokenExpiresAt)
+    });
+
+    return {
+        session,
+        refreshToken,
+        refreshTokenExpiresAt
+    };
+}
+
+function toOtpChallenge(record: MockOtpChallengeRecord): OtpChallenge {
+    return {
+        challengeId: record.challengeId,
+        channel: record.identifier.includes('@') ? 'email' : 'sms',
+        maskedDestination: maskIdentifier(record.identifier),
+        expiresAt: new Date(record.expiresAt).toISOString(),
+        resendAvailableAt: new Date(record.resendAvailableAt).toISOString()
+    };
+}
+
+function isSessionUser(payload: unknown): payload is SessionUser {
+    if (!payload || typeof payload !== 'object') {
+        return false;
+    }
+
+    const candidate = payload as SessionUser;
+
+    return (
+        typeof candidate.id === 'string' &&
+        typeof candidate.name === 'string' &&
+        typeof candidate.role === 'string' &&
+        typeof candidate.email === 'string'
+    );
+}
+
+function isSession(payload: unknown): payload is Session {
+    if (!payload || typeof payload !== 'object') {
+        return false;
+    }
+
+    const candidate = payload as Session;
+
+    return typeof candidate.token === 'string' && typeof candidate.expiresAt === 'string' && isSessionUser(candidate.user);
+}
+
+export function createMockOtpChallenge(identifier: string): RequestOtpResponse {
+    const now = Date.now();
+    const challengeId = crypto.randomUUID();
+    const record: MockOtpChallengeRecord = {
+        challengeId,
+        identifier,
+        code: OTP_CODE,
+        expiresAt: now + OTP_TTL_MS,
+        resendAvailableAt: now + RESEND_COOLDOWN_MS
+    };
+
+    mockOtpChallenges.set(challengeId, record);
+
+    return {
+        challenge: toOtpChallenge(record)
+    };
+}
+
+export function verifyMockOtpLogin(payload: z.infer<typeof loginSchema>) {
+    const challenge = mockOtpChallenges.get(payload.challengeId);
+
+    if (!challenge || challenge.identifier !== payload.identifier) {
+        throw new AuthServiceError('Request a new OTP before continuing.', 'CHALLENGE_NOT_FOUND', 400);
+    }
+
+    if (Date.now() > challenge.expiresAt) {
+        mockOtpChallenges.delete(payload.challengeId);
+        throw new AuthServiceError('The OTP has expired. Request a new code.', 'OTP_EXPIRED', 401);
+    }
+
+    if (payload.otp !== challenge.code) {
+        throw new AuthServiceError('The provided OTP is invalid.', 'INVALID_OTP', 401);
+    }
+
+    mockOtpChallenges.delete(payload.challengeId);
+    return createMockAuthPayload(payload.identifier);
+}
+
+export function refreshMockSession(refreshToken: string) {
+    const stored = mockRefreshSessions.get(refreshToken);
+
+    if (!stored) {
+        throw new AuthServiceError('Your session has expired. Sign in again.', 'REFRESH_TOKEN_INVALID', 401);
+    }
+
+    if (Date.now() > stored.expiresAt) {
+        mockRefreshSessions.delete(refreshToken);
+        throw new AuthServiceError('Your session has expired. Sign in again.', 'REFRESH_TOKEN_EXPIRED', 401);
+    }
+
+    mockRefreshSessions.delete(refreshToken);
+    return createMockAuthPayload(stored.identifier);
+}
+
+export function revokeMockRefreshToken(refreshToken?: string | null) {
+    if (refreshToken) {
+        mockRefreshSessions.delete(refreshToken);
+    }
+}
+
+export function coerceOtpChallenge(payload: unknown): RequestOtpResponse {
+    if (
+        payload &&
+        typeof payload === 'object' &&
+        'challenge' in payload &&
+        typeof (payload as { challenge: unknown }).challenge === 'object'
+    ) {
+        return payload as RequestOtpResponse;
+    }
+
+    if (
+        payload &&
+        typeof payload === 'object' &&
+        'challengeId' in payload &&
+        'expiresAt' in payload &&
+        'resendAvailableAt' in payload &&
+        'maskedDestination' in payload &&
+        'channel' in payload
+    ) {
+        return {
+            challenge: payload as OtpChallenge
+        };
+    }
+
+    throw new AuthServiceError('Backend did not return a valid OTP challenge payload.', 'INVALID_AUTH_RESPONSE', 502);
+}
+
+export function coerceAuthPayload(payload: unknown, currentRefreshToken?: string | null): AuthCookiePayload {
+    const candidate = payload as AuthPayloadShape;
+    const resolvedSession = isSession(candidate?.session)
+        ? candidate.session
+        : isSession(payload)
+            ? payload
+            : typeof candidate?.accessToken === 'string' &&
+                typeof candidate?.accessTokenExpiresAt === 'string' &&
+                isSessionUser(candidate?.user)
+                ? ({
+                    token: candidate.accessToken,
+                    expiresAt: candidate.accessTokenExpiresAt,
+                    user: candidate.user
+                } satisfies Session)
+                : null;
+
+    if (!resolvedSession) {
+        throw new AuthServiceError('Backend did not return a valid session payload.', 'INVALID_AUTH_RESPONSE', 502);
+    }
+
+    const refreshToken =
+        typeof candidate?.refreshToken === 'string'
+            ? candidate.refreshToken
+            : typeof candidate?.tokens?.refreshToken === 'string'
+                ? candidate.tokens.refreshToken
+                : currentRefreshToken ?? resolvedSession.token;
+
+    const refreshTokenExpiresAt =
+        typeof candidate?.refreshTokenExpiresAt === 'string'
+            ? candidate.refreshTokenExpiresAt
+            : typeof candidate?.tokens?.refreshTokenExpiresAt === 'string'
+                ? candidate.tokens.refreshTokenExpiresAt
+                : resolvedSession.expiresAt;
+
+    return {
+        session: resolvedSession,
+        refreshToken,
+        refreshTokenExpiresAt
+    };
 }

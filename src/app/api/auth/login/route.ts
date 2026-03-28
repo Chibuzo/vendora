@@ -3,8 +3,8 @@ import { NextResponse } from 'next/server';
 import { env } from '@/config/env';
 import { setSessionCookies } from '@/lib/auth';
 import { toApiEnvelope } from '@/lib/api-client';
-import { serverApiClient } from '@/lib/server-api';
-import { createMockSession, loginSchema } from '@/modules/auth/services/auth-service';
+import { requestBackend } from '@/lib/server-api';
+import { coerceAuthPayload, loginSchema, verifyMockOtpLogin } from '@/modules/auth/services/auth-service';
 import type { LoginResponse } from '@/modules/auth/types';
 
 export async function POST(request: Request) {
@@ -13,61 +13,54 @@ export async function POST(request: Request) {
 
   if (!parsed.success) {
     return NextResponse.json(
-      toApiEnvelope(
-        {
-          session: {
-            token: '',
-            expiresAt: new Date(0).toISOString(),
-            user: {
-              id: '',
-              name: '',
-              role: 'customer',
-              email: ''
-            }
-          }
-        } satisfies LoginResponse,
-        undefined,
-        {
-          code: 'VALIDATION_ERROR',
-          message: parsed.error.flatten().formErrors.join(', ') || 'Invalid login payload.'
-        }
-      ),
+      toApiEnvelope<null>(null, undefined, {
+        code: 'VALIDATION_ERROR',
+        message: parsed.error.flatten().formErrors.join(', ') || 'Invalid login payload.'
+      }),
       { status: 400 }
     );
   }
 
-  if (env.NEXT_PUBLIC_ENABLE_MOCKS && parsed.data.otp !== '123456') {
+  try {
+    if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
+      const upstream = await requestBackend<unknown>('/auth/login', {
+        method: 'POST',
+        body: parsed.data
+      });
+
+      if (upstream.status >= 400) {
+        return NextResponse.json(upstream.body, { status: upstream.status });
+      }
+
+      const authPayload = coerceAuthPayload(upstream.body.data);
+      const response = NextResponse.json(
+        toApiEnvelope<LoginResponse>({
+          session: authPayload.session
+        })
+      );
+      setSessionCookies(response, authPayload);
+      return response;
+    }
+
+    const authPayload = verifyMockOtpLogin(parsed.data);
+    const response = NextResponse.json(
+      toApiEnvelope<LoginResponse>({
+        session: authPayload.session
+      })
+    );
+    setSessionCookies(response, authPayload);
+    return response;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unable to complete login.';
+    const code = typeof error === 'object' && error && 'code' in error ? String(error.code) : 'AUTH_ERROR';
+    const status = typeof error === 'object' && error && 'status' in error ? Number(error.status) : 500;
+
     return NextResponse.json(
-      toApiEnvelope(
-        {
-          session: {
-            token: '',
-            expiresAt: new Date(0).toISOString(),
-            user: {
-              id: '',
-              name: '',
-              role: 'customer',
-              email: parsed.data.identifier
-            }
-          }
-        } satisfies LoginResponse,
-        undefined,
-        {
-          code: 'INVALID_OTP',
-          message: 'The provided OTP is invalid.'
-        }
-      ),
-      { status: 401 }
+      toApiEnvelope<null>(null, undefined, {
+        code,
+        message
+      }),
+      { status }
     );
   }
-
-  const session =
-    env.NEXT_PUBLIC_ENABLE_MOCKS
-      ? createMockSession(parsed.data.identifier)
-      : (await serverApiClient.post<LoginResponse, typeof parsed.data>('/auth/login', parsed.data)).data
-          .session;
-
-  const response = NextResponse.json(toApiEnvelope<LoginResponse>({ session }));
-  setSessionCookies(response, session);
-  return response;
 }

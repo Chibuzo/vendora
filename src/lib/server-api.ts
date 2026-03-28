@@ -30,6 +30,65 @@ async function parseJson(response: Response): Promise<unknown> {
   return JSON.parse(text) as unknown;
 }
 
+type BackendRequestInit = Omit<RequestInit, 'body'> & {
+  body?: BodyInit | Record<string, unknown> | null;
+  accessToken?: string | null;
+  refreshToken?: string | null;
+};
+
+function toJsonBody(body?: BodyInit | Record<string, unknown> | null): BodyInit | undefined {
+  if (body === undefined || body === null) {
+    return undefined;
+  }
+
+  if (typeof body === 'string' || body instanceof FormData || body instanceof URLSearchParams) {
+    return body;
+  }
+
+  return JSON.stringify(body);
+}
+
+export async function requestBackend<T>(path: string, init: BackendRequestInit = {}) {
+  const headers = new Headers({
+    Accept: 'application/json'
+  });
+  const body = toJsonBody(init.body);
+
+  new Headers(init.headers).forEach((value, key) => {
+    headers.set(key, value);
+  });
+
+  if (body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+
+  if (init.accessToken) {
+    headers.set('Authorization', `Bearer ${init.accessToken}`);
+  }
+
+  if (init.refreshToken) {
+    headers.set('x-refresh-token', init.refreshToken);
+  }
+
+  if (env.BACKEND_API_KEY) {
+    headers.set('x-api-key', env.BACKEND_API_KEY);
+  }
+
+  const response = await fetch(`${env.BACKEND_API_URL}${path}`, {
+    ...init,
+    headers,
+    body
+  });
+
+  const payload = await parseJson(response);
+
+  return {
+    status: response.status,
+    body: normalizeEnvelope<T>(payload),
+    headers: response.headers
+  };
+}
+
 export async function proxyToBackend<T>(request: NextRequest, path: string) {
   const headers = new Headers({
     Accept: 'application/json'
@@ -46,20 +105,14 @@ export async function proxyToBackend<T>(request: NextRequest, path: string) {
     headers.set('Authorization', `Bearer ${sessionToken}`);
   }
 
-  if (env.BACKEND_API_KEY) {
-    headers.set('x-api-key', env.BACKEND_API_KEY);
-  }
-
-  const upstream = await fetch(`${env.BACKEND_API_URL}${path}`, {
+  const upstream = await requestBackend<T>(path, {
     method: request.method,
     headers,
-    body: request.method === 'GET' || request.method === 'HEAD' ? undefined : await request.text()
+    body: request.method === 'GET' || request.method === 'HEAD' ? undefined : await request.text(),
+    accessToken: sessionToken
   });
 
-  const payload = await parseJson(upstream);
-  const normalized = normalizeEnvelope<T>(payload);
-
-  return NextResponse.json(normalized, {
+  return NextResponse.json(upstream.body, {
     status: upstream.status
   });
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Bell,
   Boxes,
@@ -15,6 +16,7 @@ import {
 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
+import { useAuth } from '@/modules/auth';
 import type { NavigationItem } from '@/shared/constants/navigation';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
@@ -53,6 +55,14 @@ export function DashboardLayout({
   children
 }: Readonly<DashboardLayoutProps>) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { session, logout, isLogoutPending } = useAuth();
+  const initials = session?.user.name
+    .split(' ')
+    .map((segment) => segment[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase();
 
   return (
     <div className="min-h-screen">
@@ -120,11 +130,15 @@ export function DashboardLayout({
                     className="inline-flex items-center gap-3 rounded-full border border-border bg-surface px-3 py-2.5 text-left transition hover:border-primary-200"
                   >
                     <Avatar size="sm">
-                      <AvatarFallback>VD</AvatarFallback>
+                      <AvatarFallback>{initials || 'VD'}</AvatarFallback>
                     </Avatar>
                     <span className="hidden min-w-0 sm:block">
-                      <span className="block text-sm font-medium text-foreground">Vendora Ops</span>
-                      <span className="block text-xs text-muted-foreground">Platform workspace</span>
+                      <span className="block text-sm font-medium text-foreground">
+                        {session?.user.name || 'Vendora Ops'}
+                      </span>
+                      <span className="block text-xs text-muted-foreground">
+                        {session ? `${session.user.role} workspace` : 'Platform workspace'}
+                      </span>
                     </span>
                     <ChevronDown className="h-4 w-4 text-muted-foreground" />
                   </button>
@@ -136,9 +150,19 @@ export function DashboardLayout({
                     Preferences
                   </DropdownItem>
                   <DropdownSeparator />
-                  <DropdownItem className="text-danger-700">
+                  <DropdownItem
+                    className="text-danger-700"
+                    disabled={isLogoutPending}
+                    onSelect={() => {
+                      void (async () => {
+                        await logout().catch(() => null);
+                        router.push('/login');
+                        router.refresh();
+                      })();
+                    }}
+                  >
                     <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
+                    {isLogoutPending ? 'Signing out...' : 'Sign out'}
                   </DropdownItem>
                 </DropdownContent>
               </Dropdown>

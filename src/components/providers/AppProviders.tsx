@@ -3,9 +3,14 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import type { Session } from '@/lib/auth';
+import { AuthBootstrap } from '@/modules/auth/components/AuthBootstrap';
+
 export function AppProviders({
+  initialSession,
   children
 }: Readonly<{
+  initialSession: Session | null;
   children: React.ReactNode;
 }>) {
   const [queryClient] = useState(
@@ -21,5 +26,10 @@ export function AppProviders({
       })
   );
 
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthBootstrap initialSession={initialSession} />
+      {children}
+    </QueryClientProvider>
+  );
 }

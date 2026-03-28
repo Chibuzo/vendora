@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
-import { canAccessPath, getLoginRedirectUrl, ROLE_COOKIE, SESSION_COOKIE } from '@/lib/auth';
+import { canAccessPath, getLoginRedirectUrl, REFRESH_COOKIE, ROLE_COOKIE, SESSION_COOKIE } from '@/lib/auth';
 import { resolveTenant } from '@/lib/tenant';
 
 export function middleware(request: NextRequest) {
@@ -19,6 +19,7 @@ export function middleware(request: NextRequest) {
   }
 
   const hasSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
+  const hasRefreshToken = Boolean(request.cookies.get(REFRESH_COOKIE)?.value);
   const role = request.cookies.get(ROLE_COOKIE)?.value;
 
   const isProtected =
@@ -26,7 +27,11 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/admin') ||
     pathname.startsWith('/orders');
 
-  if (isProtected && !hasSession) {
+  if (isProtected && !hasSession && !hasRefreshToken) {
+    return NextResponse.redirect(new URL(getLoginRedirectUrl(pathname), request.url));
+  }
+
+  if (isProtected && !role) {
     return NextResponse.redirect(new URL(getLoginRedirectUrl(pathname), request.url));
   }
 

@@ -3,7 +3,9 @@ import type { NextResponse } from 'next/server';
 import { env } from '@/config/env';
 
 export const SESSION_COOKIE = 'vendora_session';
+export const REFRESH_COOKIE = 'vendora_refresh';
 export const ROLE_COOKIE = 'vendora_role';
+export const SESSION_STATE_COOKIE = 'vendora_session_state';
 
 export type UserRole = 'customer' | 'vendor' | 'admin';
 
@@ -19,6 +21,12 @@ export interface Session {
   token: string;
   expiresAt: string;
   user: SessionUser;
+}
+
+export interface AuthCookiePayload {
+  session: Session;
+  refreshToken: string;
+  refreshTokenExpiresAt: string;
 }
 
 const protectedRouteMap: Record<UserRole, string[]> = {
@@ -47,22 +55,79 @@ export function getLoginRedirectUrl(pathname: string) {
   return `/login?${query.toString()}`;
 }
 
-export function setSessionCookies(response: NextResponse, session: Session) {
-  const secure = env.NODE_ENV === 'production';
+function serializeSession(session: Session) {
+  return encodeURIComponent(JSON.stringify(session));
+}
 
-  response.cookies.set(SESSION_COOKIE, session.token, {
+export function readSessionState(value?: string | null) {
+  if (!value) {
+    return null;
+  }
+
+  try {
+    const decoded = decodeURIComponent(value);
+    const parsed = JSON.parse(decoded) as Session;
+
+    if (
+      typeof parsed?.token === 'string' &&
+      typeof parsed?.expiresAt === 'string' &&
+      typeof parsed?.user?.role === 'string'
+    ) {
+      return parsed;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+export function clearSessionCookies(response: NextResponse) {
+  for (const name of [SESSION_COOKIE, REFRESH_COOKIE, ROLE_COOKIE, SESSION_STATE_COOKIE]) {
+    response.cookies.set(name, '', {
+      httpOnly: true,
+      secure: env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      expires: new Date(0)
+    });
+  }
+}
+
+export function setSessionCookies(response: NextResponse, payload: AuthCookiePayload) {
+  const secure = env.NODE_ENV === 'production';
+  const sessionExpiry = new Date(payload.session.expiresAt);
+  const refreshExpiry = new Date(payload.refreshTokenExpiresAt);
+
+  response.cookies.set(SESSION_COOKIE, payload.session.token, {
     httpOnly: true,
     secure,
     sameSite: 'lax',
     path: '/',
-    expires: new Date(session.expiresAt)
+    expires: sessionExpiry
   });
 
-  response.cookies.set(ROLE_COOKIE, session.user.role, {
+  response.cookies.set(REFRESH_COOKIE, payload.refreshToken, {
     httpOnly: true,
     secure,
     sameSite: 'lax',
     path: '/',
-    expires: new Date(session.expiresAt)
+    expires: refreshExpiry
+  });
+
+  response.cookies.set(ROLE_COOKIE, payload.session.user.role, {
+    httpOnly: true,
+    secure,
+    sameSite: 'lax',
+    path: '/',
+    expires: refreshExpiry
+  });
+
+  response.cookies.set(SESSION_STATE_COOKIE, serializeSession(payload.session), {
+    httpOnly: true,
+    secure,
+    sameSite: 'lax',
+    path: '/',
+    expires: refreshExpiry
   });
 }

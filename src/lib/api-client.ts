@@ -76,7 +76,24 @@ async function parseJson(response: Response): Promise<unknown> {
   }
 }
 
-async function request<T>(baseUrl: string, path: string, init: JsonRequestInit = {}) {
+async function attemptTokenRefresh(baseUrl: string, path: string) {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  if (!baseUrl.startsWith('/') || path.startsWith('/auth/')) {
+    return false;
+  }
+
+  const refreshResponse = await fetch(`${baseUrl}/auth/refresh`, {
+    method: 'POST',
+    credentials: 'include'
+  });
+
+  return refreshResponse.ok;
+}
+
+async function request<T>(baseUrl: string, path: string, init: JsonRequestInit = {}, allowRetry = true) {
   const headers = new Headers(init.headers);
   const body = toJsonBody(init.body as BodyInit | JsonRecord | undefined);
 
@@ -90,6 +107,10 @@ async function request<T>(baseUrl: string, path: string, init: JsonRequestInit =
     body,
     credentials: 'include'
   });
+
+  if (response.status === 401 && allowRetry && (await attemptTokenRefresh(baseUrl, path))) {
+    return request<T>(baseUrl, path, init, false);
+  }
 
   const payload = await parseJson(response);
   const normalized = normalizeEnvelope<T>(payload);
