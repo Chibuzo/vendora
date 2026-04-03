@@ -4,8 +4,10 @@ import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
+import { useAuth } from '@/modules/auth/hooks/use-auth';
 import { useOnboardingStore } from '@/modules/onboarding/store/use-onboarding-store';
 import { routes } from '@/shared/constants/routes';
+import { useToast } from '@/shared/components/feedback/toast';
 import { Button } from '@/shared/components/ui/button';
 import { CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
@@ -16,6 +18,8 @@ interface ProfileFormValues {
 
 export function ProfileStep() {
   const router = useRouter();
+  const { showToast } = useToast();
+  const { completeSignup, isCompleteSignupPending } = useAuth();
   const fullName = useOnboardingStore((state) => state.fullName);
   const completeProfile = useOnboardingStore((state) => state.completeProfile);
   const form = useForm<ProfileFormValues>({
@@ -28,8 +32,18 @@ export function ProfileStep() {
     <form
       className="space-y-6"
       onSubmit={form.handleSubmit((values) => {
-        completeProfile(values);
-        router.push(routes.onboarding.role as Route);
+        void (async () => {
+          await completeSignup({
+            fullName: values.fullName
+          });
+          completeProfile(values);
+          showToast({
+            title: 'Profile saved',
+            description: 'Your account details are ready for role selection.',
+            variant: 'success'
+          });
+          router.push(routes.onboarding.role as Route);
+        })();
       })}
     >
       <CardHeader className="p-0">
@@ -42,7 +56,9 @@ export function ProfileStep() {
         error={form.formState.errors.fullName?.message}
         {...form.register('fullName', { required: 'Your name is required.' })}
       />
-      <Button type="submit">Continue to role selection</Button>
+      <Button type="submit" loading={isCompleteSignupPending}>
+        Continue to role selection
+      </Button>
     </form>
   );
 }

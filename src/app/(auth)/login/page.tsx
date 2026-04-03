@@ -13,7 +13,8 @@ export default function LoginPage() {
         <div className="rounded-[var(--radius-xl)] border border-white/10 bg-white/5 p-5 text-sm text-white/72">
           <p className="font-semibold text-white">Mock accounts</p>
           <p className="mt-2">Use `buyer@vendora.app`, `vendor@vendora.app`, or `admin@vendora.app`.</p>
-          <p className="mt-1">Use OTP `123456` while mocks are enabled.</p>
+          <p className="mt-1">Password: `password123`.</p>
+          <p className="mt-1">Phone OTP: `123456` while mocks are enabled.</p>
         </div>
       }
     >
@@ -21,8 +22,8 @@ export default function LoginPage() {
         <Badge variant="secondary" size="sm">
           Vendora access
         </Badge>
-        <CardTitle className="mt-3">OTP-first sign in</CardTitle>
-        <CardDescription>Route guards handle the rest after the session is established.</CardDescription>
+        <CardTitle className="mt-3">Sign in with email or phone</CardTitle>
+        <CardDescription>Route guards handle onboarding, buyer, and vendor redirects after the session is established.</CardDescription>
       </CardHeader>
       <LoginForm />
     </AuthLayout>

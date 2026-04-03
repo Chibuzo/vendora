@@ -3,6 +3,7 @@
 import type { Route } from 'next';
 import { useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
+import { useShallow } from 'zustand/react/shallow';
 
 import { getLoginRedirectUrl } from '@/lib/auth';
 import {
@@ -19,7 +20,7 @@ export function useOnboardingGuard() {
   const pathname = usePathname();
   const router = useRouter();
   const { isHydrated, session } = useAuth();
-  const onboarding = useOnboardingStore(selectOnboardingSnapshot);
+  const onboarding = useOnboardingStore(useShallow(selectOnboardingSnapshot));
   const hasHydrated = useOnboardingStore((state) => state.hasHydrated);
 
   useEffect(() => {

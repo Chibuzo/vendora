@@ -2,9 +2,7 @@
 
 import type { Route } from 'next';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
-import type { ZodIssue } from 'zod';
+import { useState } from 'react';
 
 import { useAuth } from '@/modules/auth/hooks/use-auth';
 import { getAuthenticatedLandingRoute } from '@/modules/onboarding/lib/onboarding';
@@ -12,173 +10,150 @@ import {
   selectOnboardingSnapshot,
   useOnboardingStore
 } from '@/modules/onboarding/store/use-onboarding-store';
-import { loginSchema, requestOtpSchema } from '@/modules/auth/services/auth-service';
-import type { LoginInput, OtpChallenge, RequestOtpInput } from '@/modules/auth/types';
-import { routes } from '@/shared/constants/routes';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
-
-interface LoginFormValues {
-  identifier: string;
-  otp: string;
-}
-
-function getFieldError(issues: ZodIssue[], field: keyof LoginInput | keyof RequestOtpInput) {
-  return issues.find((issue) => issue.path[0] === field)?.message;
-}
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get('redirectTo');
-  const {
-    requestOtp,
-    login,
-    isRequestOtpPending,
-    isLoginPending,
-    requestOtpError,
-    loginError
-  } = useAuth();
   const initializeForSession = useOnboardingStore((state) => state.initializeForSession);
-  const [challenge, setChallenge] = useState<OtpChallenge | null>(null);
-  const [countdown, setCountdown] = useState(0);
+  const {
+    loginEmail,
+    loginPhoneSendOtp,
+    loginPhoneVerify,
+    fetchMe,
+    isLoginEmailPending,
+    isLoginPhoneSendOtpPending,
+    isLoginPhoneVerifyPending,
+    loginEmailError,
+    loginPhoneError
+  } = useAuth();
+  const [activeTab, setActiveTab] = useState<'email' | 'phone'>('email');
+  const [email, setEmail] = useState('buyer@vendora.app');
+  const [password, setPassword] = useState('password123');
+  const [phone, setPhone] = useState('+2348012340000');
+  const [otp, setOtp] = useState('');
+  const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [challengeNote, setChallengeNote] = useState<string>('');
 
-  const form = useForm<LoginFormValues>({
-    defaultValues: {
-      identifier: '',
-      otp: ''
-    }
-  });
-
-  useEffect(() => {
-    if (!challenge) {
-      setCountdown(0);
-      return;
-    }
-
-    const updateCountdown = () => {
-      setCountdown(Math.max(Math.ceil((Date.parse(challenge.resendAvailableAt) - Date.now()) / 1000), 0));
-    };
-
-    updateCountdown();
-    const timer = window.setInterval(updateCountdown, 1000);
-
-    return () => {
-      window.clearInterval(timer);
-    };
-  }, [challenge]);
-
-  const handleSuccessfulLogin = async (payload: LoginInput) => {
-    const session = await login(payload);
+  const finalizeLogin = async (session: Awaited<ReturnType<typeof loginEmail>>) => {
     initializeForSession(session);
+    await fetchMe().catch(() => null);
     const destination =
-      redirectTo || getAuthenticatedLandingRoute(session, selectOnboardingSnapshot(useOnboardingStore.getState()));
+      redirectTo ||
+      getAuthenticatedLandingRoute(
+        session,
+        selectOnboardingSnapshot(useOnboardingStore.getState())
+      );
 
-    router.push((destination || routes.buyer.home) as Route);
+    router.push((destination ?? '/home') as Route);
     router.refresh();
   };
 
-  const handleRequestOtp = async () => {
-    const values = form.getValues();
-    const parsed = requestOtpSchema.safeParse({
-      identifier: values.identifier
-    });
-
-    if (!parsed.success) {
-      form.setError('identifier', {
-        message: getFieldError(parsed.error.issues, 'identifier')
-      });
-      return;
-    }
-
-    form.clearErrors('identifier');
-    const response = await requestOtp(parsed.data);
-    setChallenge(response.challenge);
-    form.setFocus('otp');
-  };
-
-  const onSubmit = form.handleSubmit(async (values) => {
-    if (!challenge) {
-      await handleRequestOtp();
-      return;
-    }
-
-    const parsed = loginSchema.safeParse({
-      ...values,
-      challengeId: challenge.challengeId
-    });
-
-    if (!parsed.success) {
-      form.setError('identifier', {
-        message: getFieldError(parsed.error.issues, 'identifier')
-      });
-      form.setError('otp', {
-        message: getFieldError(parsed.error.issues, 'otp')
-      });
-      return;
-    }
-
-    form.clearErrors();
-    await handleSuccessfulLogin(parsed.data);
-  });
-
-  const identifierField = form.register('identifier');
-  const otpField = form.register('otp');
-  const activeError = challenge ? loginError : requestOtpError;
+  const activeError = activeTab === 'email' ? loginEmailError : loginPhoneError;
 
   return (
-    <form className="space-y-5" onSubmit={onSubmit}>
-      <Input
-        label="Email or phone"
-        placeholder="vendor@vendora.app"
-        autoComplete="username"
-        disabled={Boolean(challenge)}
-        error={form.formState.errors.identifier?.message}
-        {...identifierField}
-      />
+    <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'email' | 'phone')}>
+      <TabsList className="w-full">
+        <TabsTrigger value="email" className="flex-1">
+          Email login
+        </TabsTrigger>
+        <TabsTrigger value="phone" className="flex-1">
+          Phone OTP
+        </TabsTrigger>
+      </TabsList>
 
-      {challenge ? (
-        <>
+      <TabsContent value="email">
+        <form
+          className="space-y-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void (async () => {
+              const session = await loginEmail({
+                email,
+                password
+              });
+              await finalizeLogin(session);
+            })();
+          }}
+        >
+          <Input label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
           <Input
-            label="One-time passcode"
-            placeholder="123456"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            helperText={`Code sent via ${challenge.channel} to ${challenge.maskedDestination}.`}
-            error={form.formState.errors.otp?.message}
-            {...otpField}
+            label="Password"
+            type="password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
           />
-          <div className="flex items-center justify-between gap-3 text-sm">
-            <button
-              type="button"
-              className="text-muted-foreground transition hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-              disabled={countdown > 0 || isRequestOtpPending}
-              onClick={() => {
-                void handleRequestOtp();
-              }}
+          {activeError ? <p className="text-sm text-danger-700">{activeError.message}</p> : null}
+          <Button type="submit" width="full" loading={isLoginEmailPending}>
+            Sign in
+          </Button>
+        </form>
+      </TabsContent>
+
+      <TabsContent value="phone">
+        <form
+          className="space-y-5"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void (async () => {
+              if (!challengeId) {
+                const challenge = await loginPhoneSendOtp({ phone });
+                setChallengeId(challenge.challengeId);
+                setChallengeNote(`Code sent to ${challenge.maskedDestination}. Use 123456 while mocks are enabled.`);
+                return;
+              }
+
+              const session = await loginPhoneVerify({
+                phone,
+                challengeId,
+                otp
+              });
+              await finalizeLogin(session);
+            })();
+          }}
+        >
+          <Input
+            label="Phone number"
+            value={phone}
+            onChange={(event) => setPhone(event.target.value)}
+            disabled={Boolean(challengeId)}
+          />
+          {challengeId ? (
+            <Input
+              label="One-time passcode"
+              value={otp}
+              onChange={(event) => setOtp(event.target.value)}
+              helperText={challengeNote}
+            />
+          ) : null}
+          {activeError ? <p className="text-sm text-danger-700">{activeError.message}</p> : null}
+          <div className="flex gap-3">
+            {challengeId ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  setChallengeId(null);
+                  setOtp('');
+                  setChallengeNote('');
+                }}
+              >
+                Change phone
+              </Button>
+            ) : null}
+            <Button
+              type="submit"
+              width="full"
+              loading={challengeId ? isLoginPhoneVerifyPending : isLoginPhoneSendOtpPending}
             >
-              {countdown > 0 ? `Resend code in ${countdown}s` : 'Resend code'}
-            </button>
-            <button
-              type="button"
-              className="text-primary-700 transition hover:text-primary-800"
-              onClick={() => {
-                setChallenge(null);
-                form.setValue('otp', '');
-                form.clearErrors();
-              }}
-            >
-              Use a different identifier
-            </button>
+              {challengeId ? 'Verify and continue' : 'Send OTP'}
+            </Button>
           </div>
-        </>
-      ) : null}
-
-      {activeError ? <p className="text-sm text-danger-700">{activeError.message}</p> : null}
-
-      <Button type="submit" width="full" loading={challenge ? isLoginPending : isRequestOtpPending}>
-        {challenge ? 'Continue' : 'Send code'}
-      </Button>
-    </form>
+        </form>
+      </TabsContent>
+    </Tabs>
   );
 }

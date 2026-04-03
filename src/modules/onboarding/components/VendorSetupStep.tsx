@@ -4,26 +4,35 @@ import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
+import { useVendorSetup } from '@/modules/marketplace';
 import { useOnboardingStore } from '@/modules/onboarding/store/use-onboarding-store';
 import { routes } from '@/shared/constants/routes';
+import { useToast } from '@/shared/components/feedback/toast';
 import { Button } from '@/shared/components/ui/button';
 import { CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
+import { Textarea } from '@/shared/components/ui/textarea';
 
 interface VendorSetupFormValues {
   businessName: string;
-  businessCategory: string;
+  phone: string;
+  description: string;
+  category: string;
 }
 
 export function VendorSetupStep() {
   const router = useRouter();
+  const { showToast } = useToast();
   const businessName = useOnboardingStore((state) => state.businessName);
   const businessCategory = useOnboardingStore((state) => state.businessCategory);
   const completeVendorSetup = useOnboardingStore((state) => state.completeVendorSetup);
+  const setupMutation = useVendorSetup();
   const form = useForm<VendorSetupFormValues>({
     defaultValues: {
       businessName,
-      businessCategory
+      phone: '+2348012340001',
+      description: '',
+      category: businessCategory
     }
   });
 
@@ -31,8 +40,19 @@ export function VendorSetupStep() {
     <form
       className="space-y-6"
       onSubmit={form.handleSubmit((values) => {
-        completeVendorSetup(values);
-        router.push(routes.onboarding.vendorLocation as Route);
+        void (async () => {
+          await setupMutation.mutateAsync(values);
+          completeVendorSetup({
+            businessName: values.businessName,
+            businessCategory: values.category
+          });
+          showToast({
+            title: 'Storefront created',
+            description: 'Next, add your operating location.',
+            variant: 'success'
+          });
+          router.push(routes.onboarding.vendorLocation as Route);
+        })();
       })}
     >
       <CardHeader className="p-0">
@@ -47,13 +67,27 @@ export function VendorSetupStep() {
           {...form.register('businessName', { required: 'Business name is required.' })}
         />
         <Input
-          label="Category"
-          placeholder="Energy systems"
-          error={form.formState.errors.businessCategory?.message}
-          {...form.register('businessCategory', { required: 'Category is required.' })}
+          label="Phone"
+          placeholder="+2348012345678"
+          error={form.formState.errors.phone?.message}
+          {...form.register('phone', { required: 'Phone number is required.' })}
         />
       </div>
-      <Button type="submit">Continue to location</Button>
+      <Input
+        label="Category"
+        placeholder="Energy systems"
+        error={form.formState.errors.category?.message}
+        {...form.register('category', { required: 'Category is required.' })}
+      />
+      <Textarea
+        label="Business description"
+        placeholder="Describe what buyers can expect from your storefront."
+        error={form.formState.errors.description?.message}
+        {...form.register('description', { required: 'A short description is required.' })}
+      />
+      <Button type="submit" loading={setupMutation.isPending}>
+        Continue to location
+      </Button>
     </form>
   );
 }

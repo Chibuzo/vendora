@@ -4,11 +4,18 @@ import type { Route } from 'next';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Bell, ShoppingCart } from 'lucide-react';
+import { useEffect } from 'react';
 
 import { useAuth } from '@/modules/auth/hooks/use-auth';
 import { useCartStore } from '@/modules/cart/store/use-cart-store';
+import {
+  useBuyerCart,
+  useRemoveCartItem,
+  useUpdateCartItem
+} from '@/modules/marketplace';
 import { buyerNavigation, iconMap } from '@/shared/constants/navigation';
 import { routes } from '@/shared/constants/routes';
+import { CartItemCard } from '@/shared/components/marketplace/cart-item-card';
 import { Avatar, AvatarFallback } from '@/shared/components/ui/avatar';
 import { Badge } from '@/shared/components/ui/badge';
 import { buttonVariants, Button } from '@/shared/components/ui/button';
@@ -24,11 +31,22 @@ export function BuyerLayout({ children }: Readonly<{ children: React.ReactNode }
     .join('')
     .slice(0, 2)
     .toUpperCase();
+  const { data: cart } = useBuyerCart();
+  const updateCartItem = useUpdateCartItem();
+  const removeCartItem = useRemoveCartItem();
   const isDrawerOpen = useCartStore((state) => state.isDrawerOpen);
   const itemCount = useCartStore((state) => state.itemCount);
   const subtotal = useCartStore((state) => state.subtotal);
+  const syncCart = useCartStore((state) => state.syncCart);
   const toggleDrawer = useCartStore((state) => state.toggleDrawer);
   const closeDrawer = useCartStore((state) => state.closeDrawer);
+
+  useEffect(() => {
+    syncCart({
+      itemCount: cart?.totalItems ?? 0,
+      subtotal: cart?.subtotal ?? 0
+    });
+  }, [cart?.subtotal, cart?.totalItems, syncCart]);
 
   return (
     <div className="min-h-screen pb-20 md:pb-0">
@@ -39,9 +57,13 @@ export function BuyerLayout({ children }: Readonly<{ children: React.ReactNode }
               Vendora
             </Link>
             <div className="flex items-center gap-2">
-              <button type="button" className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-muted-foreground transition hover:text-foreground" aria-label="Notifications">
+              <Link
+                href={routes.shared.notifications as Route}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-muted-foreground transition hover:text-foreground"
+                aria-label="Notifications"
+              >
                 <Bell className="h-4 w-4" />
-              </button>
+              </Link>
               <button
                 type="button"
                 className="relative inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-muted-foreground transition hover:text-foreground"
@@ -103,7 +125,7 @@ export function BuyerLayout({ children }: Readonly<{ children: React.ReactNode }
       />
       <aside
         className={cn(
-          'surface fixed right-4 top-4 z-50 w-[calc(100%-2rem)] max-w-md p-6 transition',
+          'surface fixed right-4 top-4 z-50 max-h-[calc(100vh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto p-6 transition',
           isDrawerOpen ? 'translate-y-0 opacity-100' : 'pointer-events-none translate-y-4 opacity-0'
         )}
       >
@@ -117,19 +139,52 @@ export function BuyerLayout({ children }: Readonly<{ children: React.ReactNode }
           </Button>
         </div>
         <div className="mt-6 space-y-4 text-sm">
-          <div className="rounded-[var(--radius-xl)] bg-neutral-100 p-4">
-            <p className="font-medium text-foreground">Repeat purchase shortlist</p>
-            <p className="mt-2 text-muted-foreground">
-              Solar Backup Kit, Packaging Set, and Barcode Scanner remain in your cart state.
-            </p>
-          </div>
+          {cart?.items.length ? (
+            cart.items.map((item) => (
+              <CartItemCard
+                key={item.id}
+                image={item.product.imageUrl}
+                name={item.product.name}
+                vendor={item.product.vendorName}
+                quantity={item.quantity}
+                price={item.unitPrice}
+                currency={cart.currency}
+                onDecrease={() => {
+                  if (item.quantity === 1) {
+                    void removeCartItem.mutateAsync(item.id);
+                    return;
+                  }
+
+                  void updateCartItem.mutateAsync({
+                    itemId: item.id,
+                    quantity: item.quantity - 1
+                  });
+                }}
+                onIncrease={() => {
+                  void updateCartItem.mutateAsync({
+                    itemId: item.id,
+                    quantity: item.quantity + 1
+                  });
+                }}
+              />
+            ))
+          ) : (
+            <div className="rounded-[var(--radius-xl)] bg-neutral-100 p-4 text-muted-foreground">
+              Your cart is empty. Add products from the catalog to start checkout.
+            </div>
+          )}
           <div className="flex items-center justify-between text-muted-foreground">
             <span>Subtotal</span>
             <span className="font-semibold text-foreground">{formatCurrency(subtotal)}</span>
           </div>
-          <Link href={routes.buyer.checkout as Route} className={buttonVariants({ variant: 'primary', size: 'md' })}>
-            Continue to checkout
-          </Link>
+          <div className="grid gap-3">
+            <Link href={routes.buyer.cart as Route} className={buttonVariants({ variant: 'outline', size: 'md' })}>
+              Open full cart
+            </Link>
+            <Link href={routes.buyer.checkout as Route} className={buttonVariants({ variant: 'primary', size: 'md' })}>
+              Continue to checkout
+            </Link>
+          </div>
         </div>
       </aside>
 

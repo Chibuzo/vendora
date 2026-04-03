@@ -140,6 +140,19 @@ export function createJsonClient(baseUrl: string) {
         method: 'POST',
         body: body as BodyInit | JsonRecord
       });
+    },
+    patch<T, B>(path: string, body?: B, init?: Omit<JsonRequestInit, 'body'>) {
+      return request<T>(baseUrl, path, {
+        ...init,
+        method: 'PATCH',
+        body: body as BodyInit | JsonRecord | undefined
+      });
+    },
+    delete<T>(path: string, init?: Omit<JsonRequestInit, 'body'>) {
+      return request<T>(baseUrl, path, {
+        ...init,
+        method: 'DELETE'
+      });
     }
   };
 }

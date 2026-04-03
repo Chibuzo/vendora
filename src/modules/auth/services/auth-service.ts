@@ -1,14 +1,25 @@
 import { z } from 'zod';
 
 import {
-  normalizeSession,
-  normalizeSessionUser,
-  type AuthCookiePayload,
-  type Session,
-  type SessionUser,
-  type UserRole
+    normalizeSession,
+    normalizeSessionUser,
+    type AuthCookiePayload,
+    type Session,
+    type SessionUser,
+    type UserRole
 } from '@/lib/auth';
 import type { OtpChallenge, RequestOtpResponse } from '@/modules/auth/types';
+import {
+    createEmailUser,
+    createPhoneUser,
+    findUserByEmail,
+    findUserById,
+    findUserByPhone,
+    mapUserToApiUser,
+    mapUserToSessionUser,
+    updateUserProfile,
+    validateUserPassword
+} from '@/modules/mock-marketplace/store';
 
 const OTP_CODE = '123456';
 const OTP_TTL_MS = 1000 * 60 * 5;
@@ -73,6 +84,35 @@ export const loginSchema = requestOtpSchema.extend({
         .trim()
         .length(6, 'OTP must contain 6 digits.')
         .refine((value) => /^\d+$/.test(value), 'OTP must contain only digits.')
+});
+
+export const emailSignupSchema = z.object({
+    email: z.string().trim().email('Enter a valid email address.'),
+    password: z.string().trim().min(8, 'Password must be at least 8 characters long.'),
+    fullName: z.string().trim().min(2, 'Enter your full name.').optional()
+});
+
+export const emailLoginSchema = z.object({
+    email: z.string().trim().email('Enter a valid email address.'),
+    password: z.string().trim().min(8, 'Password must be at least 8 characters long.'),
+});
+
+export const phoneAuthSchema = z.object({
+    phone: z.string().trim().min(10, 'Enter a valid phone number.')
+});
+
+export const phoneVerifySchema = phoneAuthSchema.extend({
+    challengeId: z.string().trim().min(1, 'Request an OTP before continuing.'),
+    otp: z
+        .string()
+        .trim()
+        .length(6, 'OTP must contain 6 digits.')
+        .refine((value) => /^\d+$/.test(value), 'OTP must contain only digits.')
+});
+
+export const completeSignupSchema = z.object({
+    fullName: z.string().trim().min(2, 'Enter your full name.'),
+    role: z.enum(['buyer', 'vendor']).optional()
 });
 
 function resolveRole(identifier: string): UserRole {
@@ -143,6 +183,33 @@ function createMockAuthPayload(identifier: string): AuthCookiePayload {
     };
 }
 
+function issueAuthPayloadForUser(userId: string): AuthCookiePayload {
+    const userRecord = findUserById(userId);
+
+    if (!userRecord) {
+        throw new AuthServiceError('Unable to resolve user account.', 'USER_NOT_FOUND', 404);
+    }
+
+    const role = userRecord.role.toLowerCase() as UserRole;
+    const user = mapUserToSessionUser(userRecord);
+    const refreshToken = `mock_refresh_${role}_${crypto.randomUUID()}`;
+    const refreshTokenExpiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS).toISOString();
+    const session = buildMockSession(user.email, role, user);
+
+    mockRefreshSessions.set(refreshToken, {
+        identifier: user.email,
+        role,
+        user,
+        expiresAt: Date.parse(refreshTokenExpiresAt)
+    });
+
+    return {
+        session,
+        refreshToken,
+        refreshTokenExpiresAt
+    };
+}
+
 function toOtpChallenge(record: MockOtpChallengeRecord): OtpChallenge {
     return {
         challengeId: record.challengeId,
@@ -189,6 +256,81 @@ export function verifyMockOtpLogin(payload: z.infer<typeof loginSchema>) {
 
     mockOtpChallenges.delete(payload.challengeId);
     return createMockAuthPayload(payload.identifier);
+}
+
+function verifyOtpChallenge(identifier: string, challengeId: string, otp: string) {
+    const challenge = mockOtpChallenges.get(challengeId);
+
+    if (!challenge || challenge.identifier !== identifier) {
+        throw new AuthServiceError('Request a new OTP before continuing.', 'CHALLENGE_NOT_FOUND', 400);
+    }
+
+    if (Date.now() > challenge.expiresAt) {
+        mockOtpChallenges.delete(challengeId);
+        throw new AuthServiceError('The OTP has expired. Request a new code.', 'OTP_EXPIRED', 401);
+    }
+
+    if (otp !== challenge.code) {
+        throw new AuthServiceError('The provided OTP is invalid.', 'INVALID_OTP', 401);
+    }
+
+    mockOtpChallenges.delete(challengeId);
+}
+
+export function signupWithEmail(payload: z.infer<typeof emailSignupSchema>) {
+    if (findUserByEmail(payload.email)) {
+        throw new AuthServiceError('An account already exists for this email.', 'ACCOUNT_EXISTS', 409);
+    }
+
+    const user = createEmailUser(payload);
+    return issueAuthPayloadForUser(user.id);
+}
+
+export function loginWithEmail(payload: z.infer<typeof emailLoginSchema>) {
+    const user = findUserByEmail(payload.email);
+
+    if (!user || !validateUserPassword(payload.email, payload.password)) {
+        throw new AuthServiceError('Invalid email or password.', 'INVALID_CREDENTIALS', 401);
+    }
+
+    return issueAuthPayloadForUser(user.id);
+}
+
+export function requestPhoneOtp(payload: z.infer<typeof phoneAuthSchema>) {
+    return createMockOtpChallenge(payload.phone);
+}
+
+export function verifyPhoneSignup(payload: z.infer<typeof phoneVerifySchema>) {
+    verifyOtpChallenge(payload.phone, payload.challengeId, payload.otp);
+    const existing = findUserByPhone(payload.phone);
+    const user = existing ?? createPhoneUser({ phone: payload.phone });
+    return issueAuthPayloadForUser(user.id);
+}
+
+export function verifyPhoneLogin(payload: z.infer<typeof phoneVerifySchema>) {
+    verifyOtpChallenge(payload.phone, payload.challengeId, payload.otp);
+    const existing = findUserByPhone(payload.phone);
+
+    if (!existing) {
+        throw new AuthServiceError('No account found for this phone number.', 'ACCOUNT_NOT_FOUND', 404);
+    }
+
+    return issueAuthPayloadForUser(existing.id);
+}
+
+export function completeMockSignup(
+    userId: string,
+    payload: z.infer<typeof completeSignupSchema>
+) {
+    const user = updateUserProfile(userId, {
+        fullName: payload.fullName,
+        role: payload.role ? payload.role.toUpperCase() as 'BUYER' | 'VENDOR' : undefined
+    });
+
+    return {
+        auth: issueAuthPayloadForUser(user.id),
+        user: mapUserToApiUser(user)
+    };
 }
 
 export function refreshMockSession(refreshToken: string) {
@@ -246,8 +388,8 @@ export function coerceAuthPayload(payload: unknown, currentRefreshToken?: string
         normalizeSession(candidate?.session) ??
         normalizeSession(payload) ??
         (typeof candidate?.accessToken === 'string' &&
-        typeof candidate?.accessTokenExpiresAt === 'string' &&
-        normalizeSessionUser(candidate?.user)
+            typeof candidate?.accessTokenExpiresAt === 'string' &&
+            normalizeSessionUser(candidate?.user)
             ? ({
                 token: candidate.accessToken,
                 expiresAt: candidate.accessTokenExpiresAt,

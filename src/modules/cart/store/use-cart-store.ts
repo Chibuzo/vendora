@@ -6,6 +6,7 @@ interface CartState {
   isDrawerOpen: boolean;
   itemCount: number;
   subtotal: number;
+  syncCart: (payload: { itemCount: number; subtotal: number }) => void;
   openDrawer: () => void;
   closeDrawer: () => void;
   toggleDrawer: () => void;
@@ -13,8 +14,13 @@ interface CartState {
 
 export const useCartStore = create<CartState>((set) => ({
   isDrawerOpen: false,
-  itemCount: 3,
-  subtotal: 187000,
+  itemCount: 0,
+  subtotal: 0,
+  syncCart: (payload) =>
+    set({
+      itemCount: payload.itemCount,
+      subtotal: payload.subtotal
+    }),
   openDrawer: () => set({ isDrawerOpen: true }),
   closeDrawer: () => set({ isDrawerOpen: false }),
   toggleDrawer: () => set((state) => ({ isDrawerOpen: !state.isDrawerOpen }))

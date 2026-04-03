@@ -1,25 +1,33 @@
+'use client';
+
 import type { Route } from 'next';
 import Link from 'next/link';
-import { ArrowRight, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowRight, Search } from 'lucide-react';
 
-import { vendorDirectory } from '@/shared/constants/route-fixtures';
-import { routes } from '@/shared/constants/routes';
-import { SectionIntro } from '@/shared/components/layout/section-intro';
+import { useMarketplaceHome } from '@/modules/marketplace';
+import { GroupLoading } from '@/shared/components/feedback/group-loading';
 import { ProductCard } from '@/shared/components/marketplace/product-card';
 import { VendorCard } from '@/shared/components/marketplace/vendor-card';
-import { DesignSystemShowcase } from '@/shared/components/showcase/design-system-showcase';
+import { SectionIntro } from '@/shared/components/layout/section-intro';
 import { Badge } from '@/shared/components/ui/badge';
 import { buttonVariants } from '@/shared/components/ui/button';
-import { mockProducts } from '@/shared/constants/mock-data';
+import { Input } from '@/shared/components/ui/input';
+import { routes } from '@/shared/constants/routes';
 
 export default function HomePage() {
+  const { data, isLoading } = useMarketplaceHome();
+
+  if (isLoading || !data) {
+    return <GroupLoading />;
+  }
+
   return (
     <div className="space-y-10">
       <section className="surface overflow-hidden px-6 py-8 sm:px-10 sm:py-10">
         <SectionIntro
-          eyebrow="Public discovery"
-          title="A marketplace shell that cleanly separates discovery, onboarding, and operating workspaces."
-          description="Public routes stay focused on exploration and trust. Authentication, onboarding, buyer workflows, and vendor operations all branch into dedicated route groups instead of sharing the same shell."
+          eyebrow="Marketplace"
+          title="Search trusted vendors, compare products, and move from discovery to checkout without leaving the flow."
+          description="Vendora separates public discovery, onboarding, buyer operations, and vendor management into dedicated route groups while keeping the entry experience fast."
           actions={
             <>
               <Link href={routes.public.products as Route} className={buttonVariants({ variant: 'primary', size: 'lg' })}>
@@ -32,26 +40,26 @@ export default function HomePage() {
             </>
           }
         />
-        <div className="mt-8 grid gap-4 md:grid-cols-3">
-          <div className="rounded-[var(--radius-xl)] bg-primary-50 p-5">
-            <ShieldCheck className="h-5 w-5 text-primary-700" />
-            <p className="mt-4 font-semibold text-foreground">Trust-aware discovery</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Vendor trust and verification stay visible before users ever sign in.
-            </p>
+        <div className="mt-8 grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-[var(--radius-2xl)] bg-primary-50 p-5">
+            <Input
+              aria-label="Search marketplace"
+              placeholder="Search for verified packaging vendors, solar kits, warehouse tools..."
+              leadingIcon={<Search className="h-4 w-4" />}
+            />
+            <div className="mt-4 flex flex-wrap gap-2">
+              {data.categories.map((category) => (
+                <Link key={category} href={`${routes.public.search}?category=${encodeURIComponent(category)}`} className="rounded-full bg-white px-3 py-1 text-sm text-foreground shadow-soft-xs">
+                  {category}
+                </Link>
+              ))}
+            </div>
           </div>
-          <div className="rounded-[var(--radius-xl)] bg-accent-100 p-5">
-            <Sparkles className="h-5 w-5 text-accent-800" />
-            <p className="mt-4 font-semibold text-foreground">Lean public shell</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Navigation, search, and footer live here, and nowhere else.
-            </p>
-          </div>
-          <div className="rounded-[var(--radius-xl)] bg-neutral-100 p-5">
-            <Badge variant="secondary">App Router</Badge>
-            <p className="mt-4 font-semibold text-foreground">Collision-free route design</p>
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
-              Vendor operations sit under `/vendor/*` to avoid collisions with public catalog routes.
+          <div className="rounded-[var(--radius-2xl)] bg-accent-100 p-5">
+            <Badge variant="accent">Trust-first discovery</Badge>
+            <p className="mt-4 text-lg font-semibold text-foreground">Popular vendors and recommended products stay visible before sign-in.</p>
+            <p className="mt-3 text-sm leading-6 text-muted-foreground">
+              The same catalog then powers buyer search, cart, checkout, and vendor order fulfillment.
             </p>
           </div>
         </div>
@@ -59,21 +67,21 @@ export default function HomePage() {
 
       <section className="space-y-6">
         <SectionIntro
-          eyebrow="Featured vendors"
-          title="Verified operators ready for repeat buyers."
-          description="Public vendor detail routes surface credibility signals before buyers commit to a transaction."
+          eyebrow="Popular vendors"
+          title="Verified storefronts ready for repeat buyers."
+          description="Browse vendors by trust score, location, and category before you commit to checkout."
         />
         <div className="grid gap-6 lg:grid-cols-3">
-          {vendorDirectory.map((vendor) => (
+          {data.popularVendors.map((vendor) => (
             <VendorCard
-              key={vendor.slug}
-              businessName={vendor.name}
+              key={vendor.id}
+              businessName={vendor.businessName}
               trustScore={vendor.trustScore}
-              rating={Math.min(5, Math.max(4.1, vendor.trustScore / 20))}
-              reviewCount={Math.round(vendor.trustScore * 1.2)}
+              rating={vendor.rating}
+              reviewCount={Math.max(12, Math.round(vendor.totalOrders / 3))}
               location={vendor.location}
-              verificationStatus={vendor.trustScore >= 92 ? 'verified' : 'high-trust'}
-              tagline={vendor.specialty}
+              verificationStatus={vendor.verificationStatus === 'VERIFIED' ? 'verified' : 'high-trust'}
+              tagline={vendor.description}
               href={routes.public.vendorDetail(vendor.slug)}
             />
           ))}
@@ -82,12 +90,12 @@ export default function HomePage() {
 
       <section className="space-y-6">
         <SectionIntro
-          eyebrow="Featured products"
-          title="Catalog discovery stays in the public group."
-          description="Products can be explored without loading buyer or vendor-specific chrome."
+          eyebrow="Recommended products"
+          title="High-trust inventory buyers can act on immediately."
+          description="Each product entry links directly into its detail page, variants, vendor trust context, and add-to-cart flow."
         />
         <div className="grid gap-6 lg:grid-cols-3">
-          {mockProducts.slice(0, 3).map((product, index) => (
+          {data.recommendedProducts.map((product) => (
             <ProductCard
               key={product.id}
               image={product.imageUrl}
@@ -95,17 +103,16 @@ export default function HomePage() {
               price={product.price}
               currency={product.currency}
               vendor={product.vendorName}
-              rating={4.2 + index * 0.2}
-              reviewCount={44 + index * 21}
+              rating={product.rating}
+              reviewCount={product.reviewCount}
               trustStatus={product.trustScore >= 92 ? 'verified' : 'high-trust'}
               description={product.description}
               category={product.category}
+              href={routes.public.productDetail(product.slug)}
             />
           ))}
         </div>
       </section>
-
-      <DesignSystemShowcase />
     </div>
   );
 }

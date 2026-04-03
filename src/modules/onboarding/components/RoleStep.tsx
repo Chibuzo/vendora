@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { useAuth } from '@/modules/auth/hooks/use-auth';
 import { useOnboardingStore } from '@/modules/onboarding/store/use-onboarding-store';
 import { routes } from '@/shared/constants/routes';
+import { useToast } from '@/shared/components/feedback/toast';
 import { Badge } from '@/shared/components/ui/badge';
 import { Button } from '@/shared/components/ui/button';
 import { Card, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
@@ -14,10 +15,12 @@ import { cn } from '@/lib/utils';
 
 export function RoleStep() {
   const router = useRouter();
-  const { session } = useAuth();
+  const { showToast } = useToast();
   const selectedRole = useOnboardingStore((state) => state.selectedRole);
+  const fullName = useOnboardingStore((state) => state.fullName);
   const confirmRole = useOnboardingStore((state) => state.confirmRole);
-  const [activeRole, setActiveRole] = useState<'buyer' | 'vendor'>(selectedRole ?? (session?.user.role === 'vendor' ? 'vendor' : 'buyer'));
+  const { completeSignup, isCompleteSignupPending } = useAuth();
+  const [activeRole, setActiveRole] = useState<'buyer' | 'vendor'>(selectedRole ?? 'buyer');
 
   return (
     <div className="space-y-6">
@@ -60,9 +63,24 @@ export function RoleStep() {
         ))}
       </div>
       <Button
+        loading={isCompleteSignupPending}
         onClick={() => {
-          confirmRole(activeRole);
-          router.push((activeRole === 'vendor' ? routes.onboarding.vendorSetup : routes.buyer.home) as Route);
+          void (async () => {
+            await completeSignup({
+              fullName,
+              role: activeRole
+            });
+            confirmRole(activeRole);
+            showToast({
+              title: 'Role confirmed',
+              description:
+                activeRole === 'vendor'
+                  ? 'Continue to configure your storefront.'
+                  : 'Your buyer workspace is ready.',
+              variant: 'success'
+            });
+            router.push((activeRole === 'vendor' ? routes.onboarding.vendorSetup : routes.buyer.home) as Route);
+          })();
         }}
       >
         Continue
