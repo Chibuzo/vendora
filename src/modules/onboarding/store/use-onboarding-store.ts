@@ -8,7 +8,6 @@ import type { OnboardingRole, OnboardingSnapshot } from '@/modules/onboarding/li
 
 interface OnboardingState extends OnboardingSnapshot {
   activeUserId: string | null;
-  fullName: string;
   businessName: string;
   businessCategory: string;
   city: string;
@@ -17,7 +16,6 @@ interface OnboardingState extends OnboardingSnapshot {
   hasHydrated: boolean;
   setHasHydrated: (value: boolean) => void;
   initializeForSession: (session: Session | null) => void;
-  completeProfile: (payload: { fullName: string }) => void;
   confirmRole: (role: OnboardingRole) => void;
   completeVendorSetup: (payload: { businessName: string; businessCategory: string }) => void;
   completeLocation: (payload: { city: string; region: string }) => void;
@@ -29,7 +27,6 @@ const initialState: Omit<
   OnboardingState,
   | 'setHasHydrated'
   | 'initializeForSession'
-  | 'completeProfile'
   | 'confirmRole'
   | 'completeVendorSetup'
   | 'completeLocation'
@@ -37,12 +34,10 @@ const initialState: Omit<
   | 'reset'
 > = {
   activeUserId: null,
-  profileCompleted: false,
   selectedRole: null,
   vendorSetupCompleted: false,
   locationAdded: false,
   verificationSubmitted: false,
-  fullName: '',
   businessName: '',
   businessCategory: '',
   city: '',
@@ -62,9 +57,7 @@ function getSessionDraft(session: Session) {
 
   return {
     activeUserId: session.user.id,
-    fullName: session.user.name,
     selectedRole: isOnboardedDemoUser ? demoRole : null,
-    profileCompleted: isOnboardedDemoUser,
     vendorSetupCompleted: isOnboardedDemoUser,
     locationAdded: isOnboardedDemoUser,
     verificationSubmitted: isOnboardedDemoUser,
@@ -91,20 +84,11 @@ export const useOnboardingStore = create<OnboardingState>()(
         const draft = getSessionDraft(session);
 
         if (current.activeUserId === session.user.id) {
-          if (draft.profileCompleted && !current.profileCompleted) {
-            set(draft);
-          }
-
           return;
         }
 
         set(draft);
       },
-      completeProfile: ({ fullName }) =>
-        set({
-          profileCompleted: true,
-          fullName
-        }),
       confirmRole: (role) =>
         set({
           selectedRole: role,
@@ -138,12 +122,10 @@ export const useOnboardingStore = create<OnboardingState>()(
       storage: createJSONStorage(() => localStorage),
       partialize: (state) => ({
         activeUserId: state.activeUserId,
-        profileCompleted: state.profileCompleted,
         selectedRole: state.selectedRole,
         vendorSetupCompleted: state.vendorSetupCompleted,
         locationAdded: state.locationAdded,
         verificationSubmitted: state.verificationSubmitted,
-        fullName: state.fullName,
         businessName: state.businessName,
         businessCategory: state.businessCategory,
         city: state.city,
@@ -159,7 +141,6 @@ export const useOnboardingStore = create<OnboardingState>()(
 
 export function selectOnboardingSnapshot(state: OnboardingState): OnboardingSnapshot {
   return {
-    profileCompleted: state.profileCompleted,
     selectedRole: state.selectedRole,
     vendorSetupCompleted: state.vendorSetupCompleted,
     locationAdded: state.locationAdded,
@@ -170,7 +151,6 @@ export function selectOnboardingSnapshot(state: OnboardingState): OnboardingSnap
 export function createSessionOnboardingSnapshot(session: Session | null): OnboardingSnapshot {
   if (!session) {
     return {
-      profileCompleted: false,
       selectedRole: null,
       vendorSetupCompleted: false,
       locationAdded: false,
@@ -180,7 +160,6 @@ export function createSessionOnboardingSnapshot(session: Session | null): Onboar
 
   if (onboardedDemoUserIds.has(session.user.id) && (session.user.role === 'buyer' || session.user.role === 'vendor')) {
     return {
-      profileCompleted: true,
       selectedRole: session.user.role,
       vendorSetupCompleted: true,
       locationAdded: true,
@@ -189,10 +168,73 @@ export function createSessionOnboardingSnapshot(session: Session | null): Onboar
   }
 
   return {
-    profileCompleted: false,
     selectedRole: null,
     vendorSetupCompleted: false,
     locationAdded: false,
     verificationSubmitted: false
   };
 }
+
+export interface VendorOnboardingState {
+  vendorId: string;
+  businessName: string;
+  businessCategory: string;
+  phone: string;
+  description: string;
+  logoUrl: string;
+  bannerUrl: string;
+  instagramUrl: string;
+  whatsappUrl: string;
+  firstProductName: string;
+  firstProductCategory: string;
+  firstProductPrice: number;
+  firstProductImageUrl: string;
+  firstProductStockQuantity: number;
+  firstProductDescription: string;
+
+  saveBusinessDraft: (payload: Partial<VendorOnboardingState>) => void;
+  completeBusinessProfile: (payload: Partial<VendorOnboardingState>) => void;
+  saveStorefrontDraft: (payload: Partial<VendorOnboardingState>) => void;
+  completeStorefront: (payload: Partial<VendorOnboardingState>) => void;
+  saveFirstProductDraft: (payload: Partial<VendorOnboardingState>) => void;
+  completeFirstProduct: (payload: Partial<VendorOnboardingState>) => void;
+  completeOnboarding: () => void;
+}
+
+const initialVendorState = {
+  vendorId: '',
+  businessName: '',
+  businessCategory: '',
+  phone: '',
+  description: '',
+  logoUrl: '',
+  bannerUrl: '',
+  instagramUrl: '',
+  whatsappUrl: '',
+  firstProductName: '',
+  firstProductCategory: '',
+  firstProductPrice: 0,
+  firstProductImageUrl: '',
+  firstProductStockQuantity: 0,
+  firstProductDescription: ''
+};
+
+export const useVendorOnboardingStore = create<VendorOnboardingState>()(
+  persist(
+    (set) => ({
+      ...initialVendorState,
+      saveBusinessDraft: (payload) => set((state) => ({ ...state, ...payload })),
+      completeBusinessProfile: (payload) => set((state) => ({ ...state, ...payload })),
+      saveStorefrontDraft: (payload) => set((state) => ({ ...state, ...payload })),
+      completeStorefront: (payload) => set((state) => ({ ...state, ...payload })),
+      saveFirstProductDraft: (payload) => set((state) => ({ ...state, ...payload })),
+      completeFirstProduct: (payload) => set((state) => ({ ...state, ...payload })),
+      completeOnboarding: () => set(initialVendorState)
+    }),
+    {
+      name: 'vendora.vendor-onboarding',
+      storage: createJSONStorage(() => localStorage)
+    }
+  )
+);
+

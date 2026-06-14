@@ -17,9 +17,9 @@ export function RoleStep() {
   const router = useRouter();
   const { showToast } = useToast();
   const selectedRole = useOnboardingStore((state) => state.selectedRole);
-  const fullName = useOnboardingStore((state) => state.fullName);
   const confirmRole = useOnboardingStore((state) => state.confirmRole);
-  const { completeSignup, isCompleteSignupPending } = useAuth();
+  const { session, completeSignup, isCompleteSignupPending } = useAuth();
+  const fullName = session?.user.name ?? '';
   const [activeRole, setActiveRole] = useState<'buyer' | 'vendor'>(selectedRole ?? 'buyer');
 
   return (

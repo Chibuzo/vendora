@@ -21,6 +21,7 @@ export function SignupForm() {
     signupEmail,
     signupPhoneSendOtp,
     signupPhoneVerify,
+    completeSignup,
     fetchMe,
     isSignupEmailPending,
     isSignupPhoneSendOtpPending,
@@ -39,8 +40,9 @@ export function SignupForm() {
 
   const finalizeSignup = async (session: Awaited<ReturnType<typeof signupEmail>>) => {
     initializeForSession(session);
+    await completeSignup({ fullName }).catch(() => null);
     await fetchMe().catch(() => null);
-    router.push(routes.onboarding.profile as Route);
+    router.push(routes.onboarding.role as Route);
     router.refresh();
   };
 
@@ -113,6 +115,9 @@ export function SignupForm() {
             })();
           }}
         >
+          {!challengeId ? (
+            <Input label="Full name" value={fullName} onChange={(event) => setFullName(event.target.value)} />
+          ) : null}
           <Input
             label="Phone number"
             value={phone}

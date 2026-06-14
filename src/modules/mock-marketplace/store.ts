@@ -155,7 +155,20 @@ const categories = [
     { id: 'cat-electronics', name: 'Electronics', slug: 'electronics' }
 ] as const;
 
-const users = new Map<string, MarketplaceUser>([
+
+const globalForMockStore = globalThis as unknown as {
+    __vendoraMockUsers: Map<string, MarketplaceUser>;
+    __vendoraMockVendors: Map<string, MarketplaceVendor>;
+    __vendoraMockProducts: Map<string, MarketplaceProduct>;
+    __vendoraMockCarts: Map<string, CartState>;
+    __vendoraMockOrders: Map<string, OrderRecord>;
+    __vendoraMockNotifications: Map<string, NotificationRecord>;
+    __vendoraMockVendorBalances: Map<string, VendorBalanceRecord>;
+    __vendoraMockPayouts: Map<string, PayoutRecord>;
+    __vendoraMockTransactions: Map<string, TransactionRecord>;
+};
+
+const users = globalForMockStore.__vendoraMockUsers ?? new Map<string, MarketplaceUser>([
     [
         'buyer_001',
         {
@@ -200,7 +213,7 @@ const users = new Map<string, MarketplaceUser>([
     ]
 ]);
 
-const vendors = new Map<string, MarketplaceVendor>([
+const vendors = globalForMockStore.__vendoraMockVendors ?? new Map<string, MarketplaceVendor>([
     [
         'vendor_store_1',
         {
@@ -307,7 +320,7 @@ const vendors = new Map<string, MarketplaceVendor>([
     ]
 ]);
 
-const products = new Map<string, MarketplaceProduct>([
+const products = globalForMockStore.__vendoraMockProducts ?? new Map<string, MarketplaceProduct>([
     [
         'prod_1',
         {
@@ -490,7 +503,7 @@ const products = new Map<string, MarketplaceProduct>([
     ]
 ]);
 
-const carts = new Map<string, CartState>([
+const carts = globalForMockStore.__vendoraMockCarts ?? new Map<string, CartState>([
     [
         'buyer_001',
         {
@@ -515,7 +528,7 @@ const carts = new Map<string, CartState>([
     ]
 ]);
 
-const orders = new Map<string, OrderRecord>([
+const orders = globalForMockStore.__vendoraMockOrders ?? new Map<string, OrderRecord>([
     [
         'ord_1024',
         {
@@ -643,7 +656,7 @@ const orders = new Map<string, OrderRecord>([
     ]
 ]);
 
-const notifications = new Map<string, NotificationRecord>([
+const notifications = globalForMockStore.__vendoraMockNotifications ?? new Map<string, NotificationRecord>([
     [
         'ntf_1',
         {
@@ -682,7 +695,7 @@ const notifications = new Map<string, NotificationRecord>([
     ]
 ]);
 
-const vendorBalances = new Map<string, VendorBalanceRecord>([
+const vendorBalances = globalForMockStore.__vendoraMockVendorBalances ?? new Map<string, VendorBalanceRecord>([
     [
         'vendor_store_1',
         {
@@ -694,7 +707,7 @@ const vendorBalances = new Map<string, VendorBalanceRecord>([
     ]
 ]);
 
-const payouts = new Map<string, PayoutRecord>([
+const payouts = globalForMockStore.__vendoraMockPayouts ?? new Map<string, PayoutRecord>([
     [
         'payout_1',
         {
@@ -709,7 +722,7 @@ const payouts = new Map<string, PayoutRecord>([
     ]
 ]);
 
-const transactions = new Map<string, TransactionRecord>([
+const transactions = globalForMockStore.__vendoraMockTransactions ?? new Map<string, TransactionRecord>([
     [
         'txn_1',
         {
@@ -737,6 +750,18 @@ const transactions = new Map<string, TransactionRecord>([
         }
     ]
 ]);
+
+if (process.env.NODE_ENV !== 'production') {
+    globalForMockStore.__vendoraMockUsers = users;
+    globalForMockStore.__vendoraMockVendors = vendors;
+    globalForMockStore.__vendoraMockProducts = products;
+    globalForMockStore.__vendoraMockCarts = carts;
+    globalForMockStore.__vendoraMockOrders = orders;
+    globalForMockStore.__vendoraMockNotifications = notifications;
+    globalForMockStore.__vendoraMockVendorBalances = vendorBalances;
+    globalForMockStore.__vendoraMockPayouts = payouts;
+    globalForMockStore.__vendoraMockTransactions = transactions;
+}
 
 function clone<T>(value: T): T {
     return JSON.parse(JSON.stringify(value)) as T;

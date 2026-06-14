@@ -1,5 +1,7 @@
-import { VendorSetupStep } from '@/modules/onboarding/components/VendorSetupStep';
+import { redirect } from 'next/navigation';
+
+import { routes } from '@/shared/constants/routes';
 
 export default function VendorSetupPage() {
-  return <VendorSetupStep />;
+  redirect(routes.onboarding.vendorBusiness);
 }

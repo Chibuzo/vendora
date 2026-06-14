@@ -4,7 +4,6 @@ import { routes } from '@/shared/constants/routes';
 export type OnboardingRole = 'buyer' | 'vendor';
 
 export interface OnboardingSnapshot {
-  profileCompleted: boolean;
   selectedRole: OnboardingRole | null;
   vendorSetupCompleted: boolean;
   locationAdded: boolean;
@@ -16,7 +15,7 @@ export function getSuggestedRole(role: UserRole): OnboardingRole {
 }
 
 export function isOnboardingComplete(state: OnboardingSnapshot) {
-  if (!state.profileCompleted || !state.selectedRole) {
+  if (!state.selectedRole) {
     return false;
   }
 
@@ -30,10 +29,6 @@ export function isOnboardingComplete(state: OnboardingSnapshot) {
 export function getNextOnboardingRoute(state: OnboardingSnapshot, session: Session | null) {
   if (!session || session.user.role === 'admin') {
     return null;
-  }
-
-  if (!state.profileCompleted) {
-    return routes.onboarding.profile;
   }
 
   if (!state.selectedRole) {

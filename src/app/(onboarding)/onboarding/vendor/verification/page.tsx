@@ -1,5 +1,7 @@
-import { VendorVerificationStep } from '@/modules/onboarding/components/VendorVerificationStep';
+import { redirect } from 'next/navigation';
+
+import { routes } from '@/shared/constants/routes';
 
 export default function VendorVerificationPage() {
-  return <VendorVerificationStep />;
+  redirect(routes.vendor.dashboard);
 }

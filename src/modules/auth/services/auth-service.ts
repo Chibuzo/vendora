@@ -59,8 +59,20 @@ type AuthPayloadShape = {
     };
 };
 
-const mockOtpChallenges = new Map<string, MockOtpChallengeRecord>();
-const mockRefreshSessions = new Map<string, MockRefreshSessionRecord>();
+
+const globalForAuthMock = globalThis as unknown as {
+    __vendoraMockOtpChallenges: Map<string, MockOtpChallengeRecord>;
+    __vendoraMockRefreshSessions: Map<string, MockRefreshSessionRecord>;
+};
+
+const mockOtpChallenges = globalForAuthMock.__vendoraMockOtpChallenges ?? new Map<string, MockOtpChallengeRecord>();
+const mockRefreshSessions = globalForAuthMock.__vendoraMockRefreshSessions ?? new Map<string, MockRefreshSessionRecord>();
+
+if (process.env.NODE_ENV !== 'production') {
+    globalForAuthMock.__vendoraMockOtpChallenges = mockOtpChallenges;
+    globalForAuthMock.__vendoraMockRefreshSessions = mockRefreshSessions;
+}
+
 
 export class AuthServiceError extends Error {
     constructor(

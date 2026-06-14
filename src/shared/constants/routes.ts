@@ -14,11 +14,14 @@ export const routes = {
   },
   onboarding: {
     root: '/onboarding',
-    profile: '/onboarding/profile',
     role: '/onboarding/role',
-    vendorSetup: '/onboarding/vendor/setup',
+    vendorBusiness: '/onboarding/vendor/business',
     vendorLocation: '/onboarding/vendor/location',
-    vendorVerification: '/onboarding/vendor/verification'
+    vendorStorefront: '/onboarding/vendor/storefront',
+    vendorFirstProduct: '/onboarding/vendor/first-product',
+    vendorSetup: '/onboarding/vendor/business',
+    vendorVerification: '/vendor/verification',
+    buyerVerification: '/onboarding/buyer/verification'
   },
   buyer: {
     home: '/home',
@@ -36,7 +39,8 @@ export const routes = {
     orders: '/vendor/orders',
     payouts: '/vendor/payouts',
     analytics: '/vendor/analytics',
-    settings: '/vendor/settings'
+    settings: '/vendor/settings',
+    verification: '/vendor/verification'
   },
   shared: {
     notifications: '/notifications',
