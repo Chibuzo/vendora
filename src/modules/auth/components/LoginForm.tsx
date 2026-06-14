@@ -1,8 +1,10 @@
 'use client';
 
 import type { Route } from 'next';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
+import { routes } from '@/shared/constants/routes';
 
 import { useAuth } from '@/modules/auth/hooks/use-auth';
 import { getAuthenticatedLandingRoute } from '@/modules/onboarding/lib/onboarding';
@@ -13,6 +15,8 @@ import {
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
+
+const enableMocks = process.env.NEXT_PUBLIC_ENABLE_MOCKS === 'true';
 
 export function LoginForm() {
   const router = useRouter();
@@ -31,9 +35,9 @@ export function LoginForm() {
     loginPhoneError
   } = useAuth();
   const [activeTab, setActiveTab] = useState<'email' | 'phone'>('email');
-  const [email, setEmail] = useState('buyer@vendora.app');
-  const [password, setPassword] = useState('password123');
-  const [phone, setPhone] = useState('+2348012340000');
+  const [email, setEmail] = useState(enableMocks ? 'buyer@vendora.app' : '');
+  const [password, setPassword] = useState(enableMocks ? 'password123' : '');
+  const [phone, setPhone] = useState(enableMocks ? '+2348012340000' : '');
   const [otp, setOtp] = useState('');
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [challengeNote, setChallengeNote] = useState<string>('');
@@ -80,16 +84,32 @@ export function LoginForm() {
           }}
         >
           <Input label="Email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
-          <Input
-            label="Password"
-            type="password"
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
-          />
+          <div className="space-y-1.5">
+            <Input
+              label="Password"
+              type="password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+            <div className="flex justify-end">
+              <Link
+                href={routes.auth.forgotPassword}
+                className="text-xs font-medium text-primary-600 hover:text-primary-700 hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
+          </div>
           {activeError ? <p className="text-sm text-danger-700">{activeError.message}</p> : null}
           <Button type="submit" width="full" loading={isLoginEmailPending}>
             Sign in
           </Button>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            Don&apos;t have an account?{' '}
+            <Link href={routes.auth.signup} className="font-semibold text-primary-600 hover:text-primary-700 hover:underline">
+              Create account
+            </Link>
+          </p>
         </form>
       </TabsContent>
 
@@ -102,7 +122,11 @@ export function LoginForm() {
               if (!challengeId) {
                 const challenge = await loginPhoneSendOtp({ phone });
                 setChallengeId(challenge.challengeId);
-                setChallengeNote(`Code sent to ${challenge.maskedDestination}. Use 123456 while mocks are enabled.`);
+                setChallengeNote(
+                  enableMocks
+                    ? `Code sent to ${challenge.maskedDestination}. Use 123456 while mocks are enabled.`
+                    : `Code sent to ${challenge.maskedDestination}.`
+                );
                 return;
               }
 
@@ -154,6 +178,15 @@ export function LoginForm() {
           </div>
         </form>
       </TabsContent>
+      <p className="mt-8 text-center text-sm text-secondary-600/80">
+        Don&apos;t have an account?{' '}
+        <Link
+          href={routes.auth.signup}
+          className="font-semibold text-primary-600 underline-offset-4 hover:text-primary-700 hover:underline"
+        >
+          Create account
+        </Link>
+      </p>
     </Tabs>
   );
 }

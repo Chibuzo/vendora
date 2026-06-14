@@ -67,13 +67,13 @@ export default function NewVendorProductPage() {
               })();
             })}
           >
-            <Input label="Product name" placeholder="Cold Chain Storage Box" {...form.register('name', { required: true })} />
+            <Input label="Product name" placeholder="Raw Vietnamese Hair Bundle" {...form.register('name', { required: true })} />
             <div className="grid gap-4 md:grid-cols-2">
-              <Input label="Category" placeholder="Logistics" {...form.register('category', { required: true })} />
-              <Input label="Price" placeholder="142000" {...form.register('price', { required: true })} />
+              <Input label="Category" placeholder="Beauty" {...form.register('category', { required: true })} />
+              <Input label="Price" placeholder="85000" {...form.register('price', { required: true })} />
             </div>
             <Input label="Stock quantity" placeholder="24" {...form.register('stockQuantity', { required: true })} />
-            <Textarea label="Description" placeholder="Temperature-controlled container for last-mile delivery." {...form.register('description', { required: true })} />
+            <Textarea label="Description" placeholder="Double-drawn bundle with same-day pickup in Ikeja." {...form.register('description', { required: true })} />
             <Button type="submit" loading={createProduct.isPending}>
               Save product
             </Button>

@@ -14,7 +14,7 @@ import type {
   SetAuthInput
 } from './types';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api/v1';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_PATH ?? process.env.NEXT_PUBLIC_API_BASE_URL ?? '/api';
 const AUTH_STORAGE_KEY = 'vendora.api.auth';
 const REFRESH_PATHS = ['/auth/tokens/refresh', '/auth/refresh'] as const;
 

@@ -3,6 +3,7 @@
 import type { Route } from 'next';
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useShallow } from 'zustand/react/shallow';
 
 import type { UserRole } from '@/lib/auth';
 import { useAuthGuard } from '@/modules/auth/hooks/use-auth-guard';
@@ -12,7 +13,7 @@ import { getAuthenticatedLandingRoute } from '@/modules/onboarding/lib/onboardin
 export function useRoleGuard(role: Exclude<UserRole, 'admin'>) {
   const router = useRouter();
   const auth = useAuthGuard();
-  const onboarding = useOnboardingStore(selectOnboardingSnapshot);
+  const onboarding = useOnboardingStore(useShallow(selectOnboardingSnapshot));
 
   useEffect(() => {
     if (auth.isChecking || !auth.session || auth.session.user.role === role) {

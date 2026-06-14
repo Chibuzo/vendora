@@ -51,15 +51,23 @@ const initialState: Omit<
   hasHydrated: false
 };
 
+const onboardedDemoUserIds = new Set(['buyer_001', 'vendor_001']);
+
 function getSessionDraft(session: Session) {
+  const demoRole =
+    session.user.role === 'buyer' || session.user.role === 'vendor'
+      ? session.user.role
+      : null;
+  const isOnboardedDemoUser = onboardedDemoUserIds.has(session.user.id) && Boolean(demoRole);
+
   return {
     activeUserId: session.user.id,
     fullName: session.user.name,
-    selectedRole: null as OnboardingRole | null,
-    profileCompleted: false,
-    vendorSetupCompleted: false,
-    locationAdded: false,
-    verificationSubmitted: false,
+    selectedRole: isOnboardedDemoUser ? demoRole : null,
+    profileCompleted: isOnboardedDemoUser,
+    vendorSetupCompleted: isOnboardedDemoUser,
+    locationAdded: isOnboardedDemoUser,
+    verificationSubmitted: isOnboardedDemoUser,
     businessName: '',
     businessCategory: '',
     city: '',
@@ -80,12 +88,17 @@ export const useOnboardingStore = create<OnboardingState>()(
         }
 
         const current = get();
+        const draft = getSessionDraft(session);
 
         if (current.activeUserId === session.user.id) {
+          if (draft.profileCompleted && !current.profileCompleted) {
+            set(draft);
+          }
+
           return;
         }
 
-        set(getSessionDraft(session));
+        set(draft);
       },
       completeProfile: ({ fullName }) =>
         set({
@@ -162,6 +175,16 @@ export function createSessionOnboardingSnapshot(session: Session | null): Onboar
       vendorSetupCompleted: false,
       locationAdded: false,
       verificationSubmitted: false
+    };
+  }
+
+  if (onboardedDemoUserIds.has(session.user.id) && (session.user.role === 'buyer' || session.user.role === 'vendor')) {
+    return {
+      profileCompleted: true,
+      selectedRole: session.user.role,
+      vendorSetupCompleted: true,
+      locationAdded: true,
+      verificationSubmitted: true
     };
   }
 

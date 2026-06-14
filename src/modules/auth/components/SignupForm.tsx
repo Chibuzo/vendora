@@ -1,6 +1,7 @@
 'use client';
 
 import type { Route } from 'next';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -10,6 +11,8 @@ import { routes } from '@/shared/constants/routes';
 import { Button } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/shared/components/ui/tabs';
+
+const enableMocks = process.env.NEXT_PUBLIC_ENABLE_MOCKS === 'true';
 
 export function SignupForm() {
   const router = useRouter();
@@ -26,10 +29,10 @@ export function SignupForm() {
     signupPhoneError
   } = useAuth();
   const [activeTab, setActiveTab] = useState<'email' | 'phone'>('email');
-  const [fullName, setFullName] = useState('Amina Balogun');
-  const [email, setEmail] = useState('newbuyer@vendora.app');
-  const [password, setPassword] = useState('password123');
-  const [phone, setPhone] = useState('+2348012341111');
+  const [fullName, setFullName] = useState(enableMocks ? 'Amina Balogun' : '');
+  const [email, setEmail] = useState(enableMocks ? 'newbuyer@vendora.app' : '');
+  const [password, setPassword] = useState(enableMocks ? 'password123' : '');
+  const [phone, setPhone] = useState(enableMocks ? '+2348012341111' : '');
   const [otp, setOtp] = useState('');
   const [challengeId, setChallengeId] = useState<string | null>(null);
   const [challengeNote, setChallengeNote] = useState<string>('');
@@ -93,7 +96,11 @@ export function SignupForm() {
               if (!challengeId) {
                 const challenge = await signupPhoneSendOtp({ phone });
                 setChallengeId(challenge.challengeId);
-                setChallengeNote(`Code sent to ${challenge.maskedDestination}. Use 123456 while mocks are enabled.`);
+                setChallengeNote(
+                  enableMocks
+                    ? `Code sent to ${challenge.maskedDestination}. Use 123456 while mocks are enabled.`
+                    : `Code sent to ${challenge.maskedDestination}.`
+                );
                 return;
               }
 
@@ -145,6 +152,15 @@ export function SignupForm() {
           </div>
         </form>
       </TabsContent>
+      <p className="mt-8 text-center text-sm text-secondary-600/80">
+        Already have an account?{' '}
+        <Link
+          href={routes.auth.login}
+          className="font-semibold text-primary-600 underline-offset-4 hover:text-primary-700 hover:underline"
+        >
+          Sign in
+        </Link>
+      </p>
     </Tabs>
   );
 }

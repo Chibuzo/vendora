@@ -10,6 +10,7 @@ import {
   useCreateOrder,
   useInitializePayment
 } from '@/modules/marketplace';
+import type { OrderView } from '@/modules/marketplace';
 import { EmptyState } from '@/shared/components/feedback/empty-state';
 import { useToast } from '@/shared/components/feedback/toast';
 import { GroupLoading } from '@/shared/components/feedback/group-loading';
@@ -19,6 +20,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/shared/components/ui
 import { Input } from '@/shared/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
 import { routes } from '@/shared/constants/routes';
+
+const enableMocks = process.env.NEXT_PUBLIC_ENABLE_MOCKS === 'true';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -90,7 +93,7 @@ export default function CheckoutPage() {
               loading={createOrder.isPending || initializePayment.isPending}
               onClick={() => {
                 void (async () => {
-                  const createdOrders = [];
+                  const createdOrders: OrderView[] = [];
 
                   for (const [vendorId, items] of groupedItems) {
                     const order = await createOrder.mutateAsync({
@@ -111,13 +114,21 @@ export default function CheckoutPage() {
                   });
 
                   showToast({
-                    title: 'Payment initialized',
-                    description: `Reference ${payment.reference} is ready.`,
+                    title: enableMocks ? 'Mock payment completed' : 'Payment initialized',
+                    description: enableMocks
+                      ? `Reference ${payment.reference} was approved for ${createdOrders.length} vendor order${createdOrders.length === 1 ? '' : 's'}.`
+                      : `Reference ${payment.reference} is ready.`,
                     variant: 'success'
                   });
 
+                  if (enableMocks) {
+                    const firstOrder = createdOrders[0];
+                    router.push((firstOrder ? routes.buyer.orderDetail(firstOrder.id) : routes.buyer.orders) as Route);
+                    router.refresh();
+                    return;
+                  }
+
                   window.location.assign(payment.authorizationUrl);
-                  router.push(routes.buyer.orders as Route);
                 })();
               }}
             >

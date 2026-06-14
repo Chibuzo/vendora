@@ -18,7 +18,7 @@ export default function ProductDetailPage() {
   const params = useParams<{ slug: string }>();
   const router = useRouter();
   const { showToast } = useToast();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, session } = useAuth();
   const addToCart = useAddToCart();
   const slug = typeof params.slug === 'string' ? params.slug : '';
   const { data, isLoading } = useMarketplaceProduct(slug);
@@ -71,20 +71,32 @@ export default function ProductDetailPage() {
               loading={addToCart.isPending}
               onClick={() => {
                 if (!isAuthenticated) {
-                  router.push(routes.auth.login);
+                  router.push(`${routes.auth.login}?redirectTo=${encodeURIComponent(routes.public.productDetail(slug))}`);
                   return;
                 }
 
-                void addToCart.mutateAsync({
-                  productId: data.product.id,
-                  quantity: 1,
-                  selectedVariantIds: data.product.variants[0] ? [data.product.variants[0].id] : []
-                });
-                showToast({
-                  title: 'Added to cart',
-                  description: `${data.product.name} is now in your cart.`,
-                  variant: 'success'
-                });
+                if (session?.user.role !== 'buyer') {
+                  showToast({
+                    title: 'Buyer account required',
+                    description: 'Switch to a buyer account to add products to cart.',
+                    variant: 'warning'
+                  });
+                  return;
+                }
+
+                void (async () => {
+                  await addToCart.mutateAsync({
+                    productId: data.product.id,
+                    quantity: 1,
+                    selectedVariantIds: data.product.variants[0] ? [data.product.variants[0].id] : []
+                  });
+                  showToast({
+                    title: 'Added to cart',
+                    description: `${data.product.name} is now in your cart.`,
+                    variant: 'success'
+                  });
+                  router.push(routes.buyer.cart);
+                })();
               }}
             >
               Add to cart

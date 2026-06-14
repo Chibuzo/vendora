@@ -1,4 +1,5 @@
 import { ShieldCheck, Sparkles } from 'lucide-react';
+import { Logo } from '@/shared/components/ui/logo';
 
 import { Badge } from '@/shared/components/ui/badge';
 import { Card, CardContent } from '@/shared/components/ui/card';
@@ -17,6 +18,7 @@ export function AuthLayout({ eyebrow, title, description, children, aside }: Rea
       <section className="surface relative overflow-hidden border-0 bg-surface-inverse px-8 py-10 text-white sm:px-10">
         <div className="absolute inset-0 bg-panel-grid bg-[size:32px_32px] opacity-10" />
         <div className="relative space-y-8">
+          <Logo className="mb-12" />
           <Badge variant="outline" className="border-white/15 bg-white/5 text-white">
             {eyebrow}
           </Badge>

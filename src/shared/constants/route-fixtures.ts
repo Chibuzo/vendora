@@ -1,47 +1,47 @@
 export const vendorDirectory = [
   {
-    slug: 'greengrid-supplies',
-    name: 'GreenGrid Supplies',
-    specialty: 'Energy systems',
+    slug: 'beautiful-hair-ng',
+    name: 'Beautiful Hair NG',
+    specialty: 'Beauty',
     location: 'Lagos',
-    trustScore: 94,
-    description: 'Solar kits, backup power bundles, and installation-ready accessories for urban households.'
+    trustScore: 96,
+    description: 'Verified Lagos hair vendor for wigs, bundles, revamps, and bridal styling.'
   },
   {
-    slug: 'parcel-atelier',
-    name: 'Parcel Atelier',
-    specialty: 'Premium packaging',
+    slug: 'crafted-by-zara',
+    name: 'Crafted by Zara',
+    specialty: 'Fashion',
     location: 'Abuja',
-    trustScore: 89,
-    description: 'Packaging systems for premium brands that want consistent unboxing and low breakage.'
+    trustScore: 91,
+    description: 'Ready-to-wear adire, modest sets, and made-to-measure occasion pieces.'
   },
   {
-    slug: 'stockpilot-tech',
-    name: 'StockPilot Tech',
-    specialty: 'Retail operations',
+    slug: 'kitchen-mama-ph',
+    name: 'Kitchen Mama PH',
+    specialty: 'Food & Groceries',
     location: 'Port Harcourt',
-    trustScore: 92,
-    description: 'Barcode scanners, POS hardware, and warehouse tooling for fast-moving inventory teams.'
+    trustScore: 90,
+    description: 'Meal prep, soup bowls, and party trays with verified delivery history.'
   }
 ] as const;
 
 export const buyerOrders = [
-  { id: 'ord_1024', vendor: 'GreenGrid Supplies', total: 'NGN 280,000', status: 'Delivered', date: 'Mar 18' },
-  { id: 'ord_1041', vendor: 'Parcel Atelier', total: 'NGN 25,000', status: 'Processing', date: 'Mar 22' },
-  { id: 'ord_1098', vendor: 'StockPilot Tech', total: 'NGN 67,000', status: 'In transit', date: 'Mar 26' }
+  { id: 'ord_1024', vendor: 'Beautiful Hair NG', total: 'NGN 85,000', status: 'Delivered', date: 'Mar 18' },
+  { id: 'ord_1041', vendor: 'Kitchen Mama PH', total: 'NGN 37,000', status: 'Processing', date: 'Mar 22' },
+  { id: 'ord_1098', vendor: 'Crafted by Zara', total: 'NGN 42,000', status: 'In transit', date: 'Mar 26' }
 ] as const;
 
 export const notificationsFeed = [
   {
     id: 'ntf_1',
     title: 'Order update available',
-    description: 'Your GreenGrid shipment was packed and handed over to the delivery partner.',
+    description: 'Beautiful Hair NG confirmed your booking and shared preparation notes.',
     time: '12m ago'
   },
   {
     id: 'ntf_2',
     title: 'Vendor verification changed',
-    description: 'Parcel Atelier just received a higher trust badge after passing verification review.',
+    description: 'Kitchen Mama PH just received a higher trust badge after passing verification review.',
     time: '1h ago'
   },
   {

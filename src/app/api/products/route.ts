@@ -3,14 +3,14 @@ import { NextRequest, NextResponse } from 'next/server';
 import { env } from '@/config/env';
 import { toApiEnvelope } from '@/lib/api-client';
 import { proxyToBackend } from '@/lib/server-api';
+import { listLegacyMockProducts } from '@/modules/mock-marketplace/store';
 import { normalizeProductFilters, sortAndFilterProducts } from '@/modules/products/services/product-service';
 import type { ProductCatalogResponse } from '@/modules/products/types';
-import { mockProducts } from '@/shared/constants/mock-data';
 
 export async function GET(request: NextRequest) {
   if (env.NEXT_PUBLIC_ENABLE_MOCKS) {
     const filters = normalizeProductFilters(request.nextUrl.searchParams);
-    const allItems = sortAndFilterProducts(mockProducts, filters);
+    const allItems = sortAndFilterProducts(listLegacyMockProducts(), filters);
     const items = allItems.slice(0, filters.limit);
 
     return NextResponse.json(

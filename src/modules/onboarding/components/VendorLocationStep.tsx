@@ -59,7 +59,7 @@ export function VendorLocationStep() {
       <div className="grid gap-4 md:grid-cols-2">
         <Input
           label="State"
-          placeholder="Lagos State"
+          placeholder="Lagos"
           error={form.formState.errors.state?.message}
           {...form.register('state', { required: 'State is required.' })}
         />

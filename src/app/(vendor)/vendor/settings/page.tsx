@@ -16,16 +16,16 @@ export default function VendorSettingsPage() {
             <CardTitle>Storefront defaults</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
-            <Input label="Storefront name" defaultValue="GreenGrid Supplies" />
+            <Input label="Storefront name" defaultValue="Beautiful Hair NG" />
             <Input label="Support email" defaultValue="vendor@vendora.app" />
           </CardContent>
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Operations contacts</CardTitle>
+            <CardTitle>Store contacts</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4">
-            <Input label="Warehouse phone" defaultValue="+234 800 000 0000" />
+            <Input label="Store phone" defaultValue="+234 801 234 0001" />
             <Input label="Payout contact" defaultValue="finance@vendora.app" />
           </CardContent>
         </Card>

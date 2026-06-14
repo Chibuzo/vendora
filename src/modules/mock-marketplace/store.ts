@@ -3,6 +3,8 @@ import { OrderStatus } from '@/shared/api/generated/model/orderStatus';
 import { VerificationStatus } from '@/shared/api/generated/model/verificationStatus';
 import { VendorStatus } from '@/shared/api/generated/model/vendorStatus';
 import type { SessionUser, UserRole } from '@/lib/auth';
+import type { Product as LegacyProduct } from '@/modules/products/types';
+import type { VendorProfile as LegacyVendorProfile } from '@/modules/vendors/types';
 
 type AuthProvider = 'email' | 'phone';
 type ProductVariant = {
@@ -146,11 +148,11 @@ type TransactionRecord = {
 const now = Date.now();
 
 const categories = [
-    { id: 'cat-energy', name: 'Energy', slug: 'energy' },
-    { id: 'cat-packaging', name: 'Packaging', slug: 'packaging' },
-    { id: 'cat-operations', name: 'Operations', slug: 'operations' },
-    { id: 'cat-logistics', name: 'Logistics', slug: 'logistics' },
-    { id: 'cat-analytics', name: 'Analytics', slug: 'analytics' }
+    { id: 'cat-beauty', name: 'Beauty', slug: 'beauty' },
+    { id: 'cat-fashion', name: 'Fashion', slug: 'fashion' },
+    { id: 'cat-food', name: 'Food & Groceries', slug: 'food-groceries' },
+    { id: 'cat-home', name: 'Home Essentials', slug: 'home-essentials' },
+    { id: 'cat-electronics', name: 'Electronics', slug: 'electronics' }
 ] as const;
 
 const users = new Map<string, MarketplaceUser>([
@@ -204,22 +206,22 @@ const vendors = new Map<string, MarketplaceVendor>([
         {
             id: 'vendor_store_1',
             ownerUserId: 'vendor_001',
-            slug: 'greengrid-supplies',
-            businessName: 'GreenGrid Supplies',
+            slug: 'beautiful-hair-ng',
+            businessName: 'Beautiful Hair NG',
             description:
-                'Solar kits, backup power bundles, and installation-ready accessories for urban households.',
+                'Verified Lagos hair vendor for wigs, bundles, revamps, and bridal styling booked from Instagram and WhatsApp.',
             phone: '+2348012340001',
-            category: 'Energy',
+            category: 'Beauty',
             status: VendorStatus.ACTIVE,
             verificationStatus: VerificationStatus.VERIFIED,
-            trustScore: 94,
-            rating: 4.8,
-            totalOrders: 328,
+            trustScore: 96,
+            rating: 4.9,
+            totalOrders: 642,
             location: {
                 id: 'vendor_location_1',
                 state: 'Lagos',
                 city: 'Ikeja',
-                addressLine1: '12 Allen Avenue, Ikeja'
+                addressLine1: '12 Allen Avenue, Ikeja, Lagos'
             },
             createdAt: new Date(now - 1000 * 60 * 60 * 24 * 120).toISOString(),
             updatedAt: new Date(now - 1000 * 60 * 30).toISOString(),
@@ -230,17 +232,17 @@ const vendors = new Map<string, MarketplaceVendor>([
         'vendor_store_2',
         {
             id: 'vendor_store_2',
-            slug: 'parcel-atelier',
-            businessName: 'Parcel Atelier',
+            slug: 'crafted-by-zara',
+            businessName: 'Crafted by Zara',
             description:
-                'Packaging systems for premium brands that want consistent unboxing and low breakage.',
+                'Ready-to-wear adire, modest sets, and made-to-measure occasion pieces with Abuja pickup and delivery.',
             phone: '+2348099100002',
-            category: 'Packaging',
+            category: 'Fashion',
             status: VendorStatus.ACTIVE,
             verificationStatus: VerificationStatus.VERIFIED,
-            trustScore: 89,
-            rating: 4.5,
-            totalOrders: 174,
+            trustScore: 91,
+            rating: 4.7,
+            totalOrders: 284,
             location: {
                 id: 'vendor_location_2',
                 state: 'FCT',
@@ -256,17 +258,17 @@ const vendors = new Map<string, MarketplaceVendor>([
         'vendor_store_3',
         {
             id: 'vendor_store_3',
-            slug: 'stockpilot-tech',
-            businessName: 'StockPilot Tech',
+            slug: 'kitchen-mama-ph',
+            businessName: 'Kitchen Mama PH',
             description:
-                'Barcode scanners, POS hardware, and warehouse tooling for fast-moving inventory teams.',
+                'Port Harcourt meal prep, soup bowls, and party trays with verified delivery history and fast responses.',
             phone: '+2348027700003',
-            category: 'Operations',
+            category: 'Food & Groceries',
             status: VendorStatus.ACTIVE,
-            verificationStatus: VerificationStatus.PENDING,
-            trustScore: 92,
+            verificationStatus: VerificationStatus.VERIFIED,
+            trustScore: 90,
             rating: 4.6,
-            totalOrders: 221,
+            totalOrders: 418,
             location: {
                 id: 'vendor_location_3',
                 state: 'Rivers',
@@ -274,7 +276,33 @@ const vendors = new Map<string, MarketplaceVendor>([
                 addressLine1: '17 Aba Road, Port Harcourt'
             },
             createdAt: new Date(now - 1000 * 60 * 60 * 24 * 80).toISOString(),
-            updatedAt: new Date(now - 1000 * 60 * 65).toISOString()
+            updatedAt: new Date(now - 1000 * 60 * 65).toISOString(),
+            cacNumber: 'BN-1209448'
+        }
+    ],
+    [
+        'vendor_store_4',
+        {
+            id: 'vendor_store_4',
+            slug: 'enugu-home-hub',
+            businessName: 'Enugu Home Hub',
+            description:
+                'Home appliances, kitchen gadgets, and content creator accessories for verified Enugu doorstep delivery.',
+            phone: '+2348075400004',
+            category: 'Home Essentials',
+            status: VendorStatus.ACTIVE,
+            verificationStatus: VerificationStatus.PENDING,
+            trustScore: 84,
+            rating: 4.3,
+            totalOrders: 109,
+            location: {
+                id: 'vendor_location_4',
+                state: 'Enugu',
+                city: 'Enugu',
+                addressLine1: '42 Chime Avenue, New Haven'
+            },
+            createdAt: new Date(now - 1000 * 60 * 60 * 24 * 42).toISOString(),
+            updatedAt: new Date(now - 1000 * 60 * 90).toISOString()
         }
     ]
 ]);
@@ -285,25 +313,25 @@ const products = new Map<string, MarketplaceProduct>([
         {
             id: 'prod_1',
             vendorId: 'vendor_store_1',
-            slug: 'solar-backup-kit',
-            name: 'Solar Backup Kit',
-            description: 'Reliable home backup power package for urban households.',
+            slug: 'raw-vietnamese-hair-bundle',
+            name: 'Raw Vietnamese Hair Bundle',
+            description: 'Double-drawn 18 inch bundle with same-day pickup in Ikeja and verified buyer reviews.',
             category: categories[0],
-            price: 280000,
+            price: 85000,
             currency: 'NGN',
-            stockQuantity: 14,
-            tags: ['solar', 'backup', 'home'],
+            stockQuantity: 28,
+            tags: ['hair', 'wig', 'beauty', 'lagos'],
             isActive: true,
             isAvailable: true,
             images: [
                 {
                     id: 'prod_1_img_1',
-                    url: 'https://images.unsplash.com/photo-1509395176047-4a66953fd231?auto=format&fit=crop&w=900&q=80'
+                    url: 'https://images.unsplash.com/photo-1522338242992-e1a54906a8da?auto=format&fit=crop&w=900&q=80'
                 }
             ],
             variants: [
-                { id: 'prod_1_var_1', name: '3-panel set', priceDelta: 0 },
-                { id: 'prod_1_var_2', name: '5-panel set', priceDelta: 95000 }
+                { id: 'prod_1_var_1', name: '18 inch', priceDelta: 0 },
+                { id: 'prod_1_var_2', name: '20 inch', priceDelta: 15000 }
             ],
             createdAt: new Date(now - 1000 * 60 * 60 * 24 * 18).toISOString(),
             updatedAt: new Date(now - 1000 * 60 * 60 * 6).toISOString(),
@@ -314,56 +342,56 @@ const products = new Map<string, MarketplaceProduct>([
         'prod_2',
         {
             id: 'prod_2',
-            vendorId: 'vendor_store_2',
-            slug: 'premium-packaging-set',
-            name: 'Premium Packaging Set',
-            description: 'Elevated packaging suite for fashion, gifting, and premium fulfillment.',
-            category: categories[1],
-            price: 25000,
+            vendorId: 'vendor_store_1',
+            slug: 'bridal-glam-makeup-session',
+            name: 'Bridal Glam Makeup Session',
+            description: 'Full bridal face beat with lashes, touch-up kit, and optional home service inside Lagos.',
+            category: categories[0],
+            price: 60000,
             currency: 'NGN',
-            stockQuantity: 120,
-            tags: ['packaging', 'premium', 'retail'],
+            stockQuantity: 9,
+            tags: ['makeup', 'bridal', 'beauty', 'lagos'],
             isActive: true,
             isAvailable: true,
             images: [
                 {
                     id: 'prod_2_img_1',
-                    url: 'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=900&q=80'
+                    url: 'https://images.unsplash.com/photo-1487412912498-0447578fcca8?auto=format&fit=crop&w=900&q=80'
                 }
             ],
             variants: [
-                { id: 'prod_2_var_1', name: '50-piece pack', priceDelta: 0 },
-                { id: 'prod_2_var_2', name: '100-piece pack', priceDelta: 16000 }
+                { id: 'prod_2_var_1', name: 'Studio session', priceDelta: 0 },
+                { id: 'prod_2_var_2', name: 'Home service', priceDelta: 15000 }
             ],
             createdAt: new Date(now - 1000 * 60 * 60 * 24 * 12).toISOString(),
             updatedAt: new Date(now - 1000 * 60 * 60 * 5).toISOString(),
-            featured: false
+            featured: true
         }
     ],
     [
         'prod_3',
         {
             id: 'prod_3',
-            vendorId: 'vendor_store_3',
-            slug: 'warehouse-barcode-scanner',
-            name: 'Warehouse Barcode Scanner',
-            description: 'Fast scan throughput with rugged casing for heavy-duty inventory teams.',
-            category: categories[2],
-            price: 67000,
+            vendorId: 'vendor_store_2',
+            slug: 'adire-two-piece-set',
+            name: 'Adire Two-Piece Set',
+            description: 'Hand-dyed cotton two-piece set with size confirmation before dispatch.',
+            category: categories[1],
+            price: 42000,
             currency: 'NGN',
-            stockQuantity: 37,
-            tags: ['warehouse', 'scanner', 'inventory'],
+            stockQuantity: 34,
+            tags: ['adire', 'fashion', 'abuja', 'ready-to-wear'],
             isActive: true,
             isAvailable: true,
             images: [
                 {
                     id: 'prod_3_img_1',
-                    url: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80'
+                    url: 'https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=900&q=80'
                 }
             ],
             variants: [
-                { id: 'prod_3_var_1', name: 'Standard', priceDelta: 0 },
-                { id: 'prod_3_var_2', name: 'Extended battery', priceDelta: 12000 }
+                { id: 'prod_3_var_1', name: 'Medium', priceDelta: 0 },
+                { id: 'prod_3_var_2', name: 'Large', priceDelta: 0 }
             ],
             createdAt: new Date(now - 1000 * 60 * 60 * 24 * 8).toISOString(),
             updatedAt: new Date(now - 1000 * 60 * 60 * 4).toISOString(),
@@ -374,26 +402,26 @@ const products = new Map<string, MarketplaceProduct>([
         'prod_4',
         {
             id: 'prod_4',
-            vendorId: 'vendor_store_1',
-            slug: 'cold-chain-storage-box',
-            name: 'Cold Chain Storage Box',
-            description: 'Temperature-controlled container for last-mile food and pharma delivery.',
-            category: categories[3],
-            price: 142000,
+            vendorId: 'vendor_store_3',
+            slug: 'ready-to-eat-soup-bowl-bundle',
+            name: 'Ready-To-Eat Soup Bowl Bundle',
+            description: 'Four frozen soup bowls packed for family meals with same-day Port Harcourt delivery.',
+            category: categories[2],
+            price: 18500,
             currency: 'NGN',
-            stockQuantity: 10,
-            tags: ['logistics', 'cold-chain', 'delivery'],
+            stockQuantity: 46,
+            tags: ['food', 'meal-prep', 'soup', 'port-harcourt'],
             isActive: true,
             isAvailable: true,
             images: [
                 {
                     id: 'prod_4_img_1',
-                    url: 'https://images.unsplash.com/photo-1586528116311-ad8dd3c8310d?auto=format&fit=crop&w=900&q=80'
+                    url: 'https://images.unsplash.com/photo-1547592166-23ac45744acd?auto=format&fit=crop&w=900&q=80'
                 }
             ],
             variants: [
-                { id: 'prod_4_var_1', name: '120L', priceDelta: 0 },
-                { id: 'prod_4_var_2', name: '240L', priceDelta: 54000 }
+                { id: 'prod_4_var_1', name: 'Egusi mix', priceDelta: 0 },
+                { id: 'prod_4_var_2', name: 'Oha mix', priceDelta: 2500 }
             ],
             createdAt: new Date(now - 1000 * 60 * 60 * 24 * 6).toISOString(),
             updatedAt: new Date(now - 1000 * 60 * 60 * 3).toISOString(),
@@ -404,29 +432,59 @@ const products = new Map<string, MarketplaceProduct>([
         'prod_5',
         {
             id: 'prod_5',
-            vendorId: 'vendor_store_1',
-            slug: 'inventory-demand-forecast-pack',
-            name: 'Inventory Demand Forecast Pack',
-            description: 'Decision support dataset and dashboard template for weekly replenishment.',
-            category: categories[4],
-            price: 49000,
+            vendorId: 'vendor_store_4',
+            slug: 'smart-rechargeable-blender',
+            name: 'Smart Rechargeable Blender',
+            description: 'Portable blender for smoothies and baby food with Enugu pickup or doorstep delivery.',
+            category: categories[3],
+            price: 32000,
             currency: 'NGN',
-            stockQuantity: 65,
-            tags: ['analytics', 'forecasting', 'inventory'],
+            stockQuantity: 19,
+            tags: ['home', 'kitchen', 'appliances', 'enugu'],
             isActive: true,
             isAvailable: true,
             images: [
                 {
                     id: 'prod_5_img_1',
-                    url: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=900&q=80'
+                    url: 'https://images.unsplash.com/photo-1570222094114-d054a817e56b?auto=format&fit=crop&w=900&q=80'
                 }
             ],
             variants: [
-                { id: 'prod_5_var_1', name: 'Starter', priceDelta: 0 },
-                { id: 'prod_5_var_2', name: 'Team access', priceDelta: 18000 }
+                { id: 'prod_5_var_1', name: 'White', priceDelta: 0 },
+                { id: 'prod_5_var_2', name: 'Mint green', priceDelta: 0 }
             ],
             createdAt: new Date(now - 1000 * 60 * 60 * 24 * 3).toISOString(),
             updatedAt: new Date(now - 1000 * 60 * 60 * 2).toISOString(),
+            featured: false
+        }
+    ],
+    [
+        'prod_6',
+        {
+            id: 'prod_6',
+            vendorId: 'vendor_store_4',
+            slug: 'phone-tripod-content-kit',
+            name: 'Phone Tripod Content Kit',
+            description: 'Tripod, clip light, and Bluetooth remote for vendors creating Reels and TikTok product videos.',
+            category: categories[4],
+            price: 28000,
+            currency: 'NGN',
+            stockQuantity: 23,
+            tags: ['electronics', 'content', 'creator', 'tripod'],
+            isActive: true,
+            isAvailable: true,
+            images: [
+                {
+                    id: 'prod_6_img_1',
+                    url: 'https://images.unsplash.com/photo-1512790182412-b19e6d62bc39?auto=format&fit=crop&w=900&q=80'
+                }
+            ],
+            variants: [
+                { id: 'prod_6_var_1', name: 'Standard kit', priceDelta: 0 },
+                { id: 'prod_6_var_2', name: 'Kit with ring light', priceDelta: 9000 }
+            ],
+            createdAt: new Date(now - 1000 * 60 * 60 * 24 * 2).toISOString(),
+            updatedAt: new Date(now - 1000 * 60 * 60).toISOString(),
             featured: false
         }
     ]
@@ -447,9 +505,9 @@ const carts = new Map<string, CartState>([
                 },
                 {
                     id: 'cart_item_2',
-                    productId: 'prod_2',
+                    productId: 'prod_4',
                     quantity: 2,
-                    selectedVariantIds: ['prod_2_var_1']
+                    selectedVariantIds: ['prod_4_var_1']
                 }
             ],
             updatedAt: new Date(now - 1000 * 60 * 35).toISOString()
@@ -465,7 +523,7 @@ const orders = new Map<string, OrderRecord>([
             buyerId: 'buyer_001',
             vendorId: 'vendor_store_1',
             status: OrderStatus.DELIVERED,
-            totalAmount: 280000,
+            totalAmount: 85000,
             currency: 'NGN',
             createdAt: new Date(now - 1000 * 60 * 60 * 24 * 10).toISOString(),
             deliveryAddress: '24 Admiralty Way, Lekki Phase 1, Lagos',
@@ -505,18 +563,18 @@ const orders = new Map<string, OrderRecord>([
         {
             id: 'ord_1041',
             buyerId: 'buyer_001',
-            vendorId: 'vendor_store_2',
+            vendorId: 'vendor_store_3',
             status: OrderStatus.PROCESSING,
-            totalAmount: 50000,
+            totalAmount: 37000,
             currency: 'NGN',
             createdAt: new Date(now - 1000 * 60 * 60 * 24 * 5).toISOString(),
             deliveryAddress: '24 Admiralty Way, Lekki Phase 1, Lagos',
             items: [
                 {
                     id: 'ord_1041_item_1',
-                    productId: 'prod_2',
+                    productId: 'prod_4',
                     quantity: 2,
-                    selectedVariantIds: ['prod_2_var_1']
+                    selectedVariantIds: ['prod_4_var_1']
                 }
             ],
             timeline: [
@@ -540,6 +598,48 @@ const orders = new Map<string, OrderRecord>([
             ],
             paymentReference: 'PAY-1041'
         }
+    ],
+    [
+        'ord_1058',
+        {
+            id: 'ord_1058',
+            buyerId: 'buyer_001',
+            vendorId: 'vendor_store_1',
+            status: OrderStatus.PROCESSING,
+            totalAmount: 75000,
+            currency: 'NGN',
+            createdAt: new Date(now - 1000 * 60 * 60 * 24 * 2).toISOString(),
+            deliveryAddress: '24 Admiralty Way, Lekki Phase 1, Lagos',
+            items: [
+                {
+                    id: 'ord_1058_item_1',
+                    productId: 'prod_2',
+                    quantity: 1,
+                    selectedVariantIds: ['prod_2_var_2']
+                }
+            ],
+            timeline: [
+                {
+                    id: 'ord_1058_t_1',
+                    title: 'Order placed',
+                    status: OrderStatus.PENDING,
+                    completedAt: new Date(now - 1000 * 60 * 60 * 24 * 2).toISOString()
+                },
+                {
+                    id: 'ord_1058_t_2',
+                    title: 'Payment confirmed',
+                    status: OrderStatus.PAID,
+                    completedAt: new Date(now - 1000 * 60 * 60 * 24 * 2 + 1000 * 60 * 15).toISOString()
+                },
+                {
+                    id: 'ord_1058_t_3',
+                    title: 'Processing',
+                    status: OrderStatus.PROCESSING,
+                    completedAt: new Date(now - 1000 * 60 * 60 * 24).toISOString()
+                }
+            ],
+            paymentReference: 'PAY-1058'
+        }
     ]
 ]);
 
@@ -551,7 +651,7 @@ const notifications = new Map<string, NotificationRecord>([
             userId: 'buyer_001',
             type: NotificationType.ORDER_UPDATE,
             title: 'Order update available',
-            body: 'Your GreenGrid shipment was packed and handed over to the delivery partner.',
+            body: 'Beautiful Hair NG confirmed your bridal glam booking and shared preparation notes.',
             isRead: false,
             createdAt: new Date(now - 1000 * 60 * 12).toISOString()
         }
@@ -563,7 +663,7 @@ const notifications = new Map<string, NotificationRecord>([
             userId: 'buyer_001',
             type: NotificationType.SYSTEM,
             title: 'Vendor verification changed',
-            body: 'Parcel Atelier just received a higher trust badge after passing verification review.',
+            body: 'Kitchen Mama PH just received a higher trust badge after passing verification review.',
             isRead: true,
             createdAt: new Date(now - 1000 * 60 * 70).toISOString()
         }
@@ -587,8 +687,8 @@ const vendorBalances = new Map<string, VendorBalanceRecord>([
         'vendor_store_1',
         {
             vendorId: 'vendor_store_1',
-            availableBalance: 820000,
-            pendingBalance: 145000,
+            availableBalance: 1240000,
+            pendingBalance: 160000,
             currency: 'NGN'
         }
     ]
@@ -616,11 +716,24 @@ const transactions = new Map<string, TransactionRecord>([
             id: 'txn_1',
             vendorId: 'vendor_store_1',
             type: 'ORDER',
-            amount: 280000,
+            amount: 85000,
             currency: 'NGN',
             status: 'SUCCESS',
             reference: 'PAY-1024',
             createdAt: new Date(now - 1000 * 60 * 60 * 24 * 10).toISOString()
+        }
+    ],
+    [
+        'txn_2',
+        {
+            id: 'txn_2',
+            vendorId: 'vendor_store_1',
+            type: 'ORDER',
+            amount: 75000,
+            currency: 'NGN',
+            status: 'PENDING',
+            reference: 'PAY-1058',
+            createdAt: new Date(now - 1000 * 60 * 60 * 24 * 2).toISOString()
         }
     ]
 ]);
@@ -719,6 +832,23 @@ function toProductCard(product: MarketplaceProduct) {
         isAvailable: product.isAvailable,
         tags: product.tags,
         featured: product.featured
+    };
+}
+
+function toLegacyProduct(product: MarketplaceProduct): LegacyProduct {
+    const card = toProductCard(product);
+
+    return {
+        id: card.id,
+        name: card.name,
+        description: card.description,
+        price: card.price,
+        currency: card.currency,
+        category: card.category,
+        vendorName: card.vendorName,
+        trustScore: card.trustScore,
+        imageUrl: card.imageUrl,
+        featured: card.featured
     };
 }
 
@@ -1041,6 +1171,47 @@ export function getProductCatalog(filters: {
     });
 }
 
+export function listLegacyMockProducts() {
+    return clone([...products.values()].map(toLegacyProduct));
+}
+
+export function getLegacyMockVendorProfile(userId?: string): LegacyVendorProfile | null {
+    const vendor =
+        (userId ? getVendorForUser(userId) : null) ??
+        getVendorForUser('vendor_001') ??
+        [...vendors.values()][0] ??
+        null;
+
+    if (!vendor) {
+        return null;
+    }
+
+    const owner = vendor.ownerUserId ? users.get(vendor.ownerUserId) : null;
+    const vendorOrders = [...orders.values()].filter((order) => order.vendorId === vendor.id);
+    const activeOrders = vendorOrders.filter((order) => order.status !== OrderStatus.CANCELLED).length;
+    const recentCutoff = now - 1000 * 60 * 60 * 24 * 30;
+    const monthlyOrders = vendorOrders.filter((order) => Date.parse(order.createdAt) >= recentCutoff).length;
+    const lifetimeRevenue =
+        vendorOrders.reduce((sum, order) => sum + order.totalAmount, 0) ||
+        Math.round(vendor.totalOrders * 18500);
+
+    return clone({
+        id: vendor.id,
+        businessName: vendor.businessName,
+        ownerName: owner?.fullName ?? 'Vendora Vendor',
+        category: vendor.category,
+        verified: vendor.verificationStatus === VerificationStatus.VERIFIED,
+        trustScore: vendor.trustScore,
+        lifetimeRevenue,
+        completionRate: vendorOrders.length
+            ? Math.round((activeOrders / vendorOrders.length) * 100)
+            : Math.min(99, Math.max(82, vendor.trustScore)),
+        responseTimeInMinutes: vendor.trustScore >= 92 ? 9 : 18,
+        payoutStatus: vendor.verificationStatus === VerificationStatus.VERIFIED ? 'healthy' : 'review',
+        monthlyOrders: monthlyOrders || Math.min(vendor.totalOrders, 48)
+    });
+}
+
 export function getProductDetails(slug: string) {
     const product = [...products.values()].find((entry) => entry.slug === slug);
 
@@ -1228,7 +1399,7 @@ export function createOrder(
         id,
         buyerId: userId,
         vendorId: payload.vendorId,
-        status: OrderStatus.PENDING,
+        status: OrderStatus.PAID,
         totalAmount,
         currency: 'NGN',
         createdAt,
@@ -1239,7 +1410,7 @@ export function createOrder(
             quantity: item.quantity,
             selectedVariantIds: [...(item.selectedVariantIds ?? [])]
         })),
-        timeline: createTimeline(OrderStatus.PENDING),
+        timeline: createTimeline(OrderStatus.PAID),
         paymentReference: `PAY-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
     };
 
@@ -1276,8 +1447,8 @@ export function createOrder(
         id: notificationId,
         userId,
         type: NotificationType.ORDER_UPDATE,
-        title: 'Order created successfully',
-        body: `Your order ${id} is now awaiting payment confirmation.`,
+        title: 'Order paid successfully',
+        body: `Your order ${id} has been paid and sent to the vendor for fulfillment.`,
         isRead: false,
         createdAt
     });

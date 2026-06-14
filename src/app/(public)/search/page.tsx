@@ -1,5 +1,6 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
 import { useMarketplaceSearch } from '@/modules/marketplace';
@@ -13,16 +14,20 @@ import { Select } from '@/shared/components/ui/select';
 import { routes } from '@/shared/constants/routes';
 
 export default function SearchPage() {
-  const [query, setQuery] = useState('');
-  const [category, setCategory] = useState('');
+  const searchParams = useSearchParams();
+  const [query, setQuery] = useState(() => searchParams.get('q') ?? '');
+  const [category, setCategory] = useState(() => searchParams.get('category') ?? '');
+  const [state, setState] = useState(() => searchParams.get('state') ?? '');
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const { data } = useMarketplaceSearch({
     q: query || undefined,
     category: category || undefined,
+    state: state || undefined,
     verifiedOnly
   });
 
-  const categories = ['Energy', 'Packaging', 'Operations', 'Logistics', 'Analytics'];
+  const categories = ['Beauty', 'Fashion', 'Food & Groceries', 'Home Essentials', 'Electronics'];
+  const states = ['Lagos', 'FCT', 'Rivers', 'Enugu'];
 
   return (
     <div className="space-y-6">
@@ -31,13 +36,19 @@ export default function SearchPage() {
         title="Search vendors and products from one public surface."
         description="Discovery stays lightweight while still exposing the filters buyers care about most."
       />
-      <div className="grid gap-4 rounded-[var(--radius-2xl)] border border-border/70 bg-surface p-5 md:grid-cols-[1fr_220px_auto]">
+      <div className="grid gap-4 rounded-[var(--radius-2xl)] border border-border/70 bg-surface p-5 md:grid-cols-[1fr_220px_180px_auto]">
         <Input label="Query" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search the marketplace" />
         <Select
           label="Category"
           value={category}
           onValueChange={setCategory}
           options={[{ label: 'All categories', value: '' }, ...categories.map((entry) => ({ label: entry, value: entry }))]}
+        />
+        <Select
+          label="State"
+          value={state}
+          onValueChange={setState}
+          options={[{ label: 'All states', value: '' }, ...states.map((entry) => ({ label: entry, value: entry }))]}
         />
         <div className="flex items-end pb-1">
           <Checkbox

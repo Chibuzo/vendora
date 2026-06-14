@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { env } from '@/config/env';
 import { readSessionState, SESSION_STATE_COOKIE } from '@/lib/auth';
 import { toApiEnvelope } from '@/lib/api-client';
+import { proxyToBackend } from '@/lib/server-api';
 import {
   addCartItem,
   createOrder,
@@ -68,11 +70,21 @@ function unauthorized() {
   return error('You must be signed in to continue.', 401, 'UNAUTHORIZED');
 }
 
+function proxyPath(request: NextRequest, path: string[]) {
+  const nestedPath = path.join('/');
+  return `/marketplace/${nestedPath}${request.nextUrl.search}`;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: Readonly<{ params: Promise<{ path: string[] }> }>
 ) {
   const { path } = await params;
+
+  if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
+    return proxyToBackend(request, proxyPath(request, path));
+  }
+
   const [resource, identifier] = path;
   const query = request.nextUrl.searchParams;
 
@@ -187,6 +199,11 @@ export async function POST(
   { params }: Readonly<{ params: Promise<{ path: string[] }> }>
 ) {
   const { path } = await params;
+
+  if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
+    return proxyToBackend(request, proxyPath(request, path));
+  }
+
   const [resource, identifier, nested] = path;
 
   try {
@@ -289,6 +306,11 @@ export async function PATCH(
   { params }: Readonly<{ params: Promise<{ path: string[] }> }>
 ) {
   const { path } = await params;
+
+  if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
+    return proxyToBackend(request, proxyPath(request, path));
+  }
+
   const [resource, identifier, nested] = path;
 
   try {
@@ -343,6 +365,11 @@ export async function DELETE(
   { params }: Readonly<{ params: Promise<{ path: string[] }> }>
 ) {
   const { path } = await params;
+
+  if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
+    return proxyToBackend(request, proxyPath(request, path));
+  }
+
   const [resource, identifier, nested] = path;
 
   try {

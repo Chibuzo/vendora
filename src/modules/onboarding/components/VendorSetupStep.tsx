@@ -62,7 +62,7 @@ export function VendorSetupStep() {
       <div className="grid gap-4 md:grid-cols-2">
         <Input
           label="Business name"
-          placeholder="GreenGrid Supplies"
+          placeholder="Beautiful Hair NG"
           error={form.formState.errors.businessName?.message}
           {...form.register('businessName', { required: 'Business name is required.' })}
         />
@@ -75,7 +75,7 @@ export function VendorSetupStep() {
       </div>
       <Input
         label="Category"
-        placeholder="Energy systems"
+        placeholder="Beauty"
         error={form.formState.errors.category?.message}
         {...form.register('category', { required: 'Category is required.' })}
       />

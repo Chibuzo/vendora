@@ -2,7 +2,9 @@
 
 import type { Route } from 'next';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowRight, Search } from 'lucide-react';
+import { useState } from 'react';
 
 import { useMarketplaceHome } from '@/modules/marketplace';
 import { GroupLoading } from '@/shared/components/feedback/group-loading';
@@ -10,11 +12,13 @@ import { ProductCard } from '@/shared/components/marketplace/product-card';
 import { VendorCard } from '@/shared/components/marketplace/vendor-card';
 import { SectionIntro } from '@/shared/components/layout/section-intro';
 import { Badge } from '@/shared/components/ui/badge';
-import { buttonVariants } from '@/shared/components/ui/button';
+import { Button, buttonVariants } from '@/shared/components/ui/button';
 import { Input } from '@/shared/components/ui/input';
 import { routes } from '@/shared/constants/routes';
 
 export default function HomePage() {
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState('');
   const { data, isLoading } = useMarketplaceHome();
 
   if (isLoading || !data) {
@@ -42,11 +46,26 @@ export default function HomePage() {
         />
         <div className="mt-8 grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
           <div className="rounded-[var(--radius-2xl)] bg-primary-50 p-5">
-            <Input
-              aria-label="Search marketplace"
-              placeholder="Search for verified packaging vendors, solar kits, warehouse tools..."
-              leadingIcon={<Search className="h-4 w-4" />}
-            />
+            <form
+              className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const query = searchTerm.trim();
+                router.push(query ? `${routes.public.search}?q=${encodeURIComponent(query)}` : routes.public.search);
+              }}
+            >
+              <Input
+                aria-label="Search marketplace"
+                placeholder="Search verified hair, adire, meal prep, home gadgets..."
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                leadingIcon={<Search className="h-4 w-4" />}
+              />
+              <Button type="submit">
+                <Search className="h-4 w-4" />
+                Search
+              </Button>
+            </form>
             <div className="mt-4 flex flex-wrap gap-2">
               {data.categories.map((category) => (
                 <Link key={category} href={`${routes.public.search}?category=${encodeURIComponent(category)}`} className="rounded-full bg-white px-3 py-1 text-sm text-foreground shadow-soft-xs">

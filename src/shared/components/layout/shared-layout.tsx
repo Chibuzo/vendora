@@ -2,6 +2,7 @@
 
 import type { Route } from 'next';
 import Link from 'next/link';
+import { useShallow } from 'zustand/react/shallow';
 
 import { useAuth } from '@/modules/auth/hooks/use-auth';
 import { getAuthenticatedLandingRoute } from '@/modules/onboarding/lib/onboarding';
@@ -11,7 +12,7 @@ import { Badge } from '@/shared/components/ui/badge';
 
 export function SharedLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { session } = useAuth();
-  const onboarding = useOnboardingStore(selectOnboardingSnapshot);
+  const onboarding = useOnboardingStore(useShallow(selectOnboardingSnapshot));
   const backHref = getAuthenticatedLandingRoute(session, onboarding);
 
   return (

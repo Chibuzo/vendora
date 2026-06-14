@@ -1,6 +1,6 @@
 import { env } from '@/config/env';
 import { serverApiClient } from '@/lib/server-api';
-import { mockProducts } from '@/shared/constants/mock-data';
+import { listLegacyMockProducts } from '@/modules/mock-marketplace/store';
 
 import { normalizeProductFilters, sortAndFilterProducts } from '@/modules/products/services/product-service';
 import type { ProductCatalogResponse, ProductFilters } from '@/modules/products/types';
@@ -9,7 +9,7 @@ export async function getProductsServer(filters: Partial<ProductFilters> = {}) {
   const normalized = normalizeProductFilters(filters);
 
   if (env.NEXT_PUBLIC_ENABLE_MOCKS) {
-    const items = sortAndFilterProducts(mockProducts, normalized).slice(0, normalized.limit);
+    const items = sortAndFilterProducts(listLegacyMockProducts(), normalized).slice(0, normalized.limit);
 
     return {
       items,
