@@ -64,14 +64,16 @@ export function FirstProductForm() {
   const completeOnboarding = useVendorOnboardingStore((state) => state.completeOnboarding);
   const createProductMutation = useCreateVendorProduct();
   const completeOnboardingMutation = useCompleteVendorOnboarding();
+  const priceValue = price > 0 ? String(price) : '';
+  const stockQuantityValue = stockQuantity > 0 ? String(stockQuantity) : '';
   const form = useForm<FirstProductFormValues>({
     resolver: zodResolver(firstProductSchema),
     defaultValues: {
       name,
       category,
-      price,
+      price: priceValue,
       imageUrl,
-      stockQuantity,
+      stockQuantity: stockQuantityValue,
       description
     }
   });
@@ -93,7 +95,7 @@ export function FirstProductForm() {
   const skip = () => {
     void (async () => {
       try {
-        completeFirstProduct();
+        completeFirstProduct({});
         await finishOnboarding();
         showToast({
           title: 'Onboarding complete',
@@ -121,11 +123,16 @@ export function FirstProductForm() {
           }
 
           try {
-            saveFirstProductDraft({
-              ...values,
-              stockQuantity: values.stockQuantity ?? '',
-              description: values.description ?? ''
-            });
+            const productDraft = {
+              firstProductName: values.name,
+              firstProductCategory: values.category,
+              firstProductPrice: Number(values.price),
+              firstProductImageUrl: values.imageUrl,
+              firstProductStockQuantity: values.stockQuantity ? Number(values.stockQuantity) : 0,
+              firstProductDescription: values.description ?? ''
+            };
+
+            saveFirstProductDraft(productDraft);
             await createProductMutation.mutateAsync({
               vendorId,
               name: values.name,
@@ -135,11 +142,7 @@ export function FirstProductForm() {
               stockQuantity: values.stockQuantity ? Number(values.stockQuantity) : 0,
               description: values.description ?? ''
             });
-            completeFirstProduct({
-              ...values,
-              stockQuantity: values.stockQuantity ?? '',
-              description: values.description ?? ''
-            });
+            completeFirstProduct(productDraft);
             await finishOnboarding();
             showToast({
               title: 'Product added',

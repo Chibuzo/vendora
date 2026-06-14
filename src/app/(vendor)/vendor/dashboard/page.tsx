@@ -9,7 +9,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { useAuth } from '@/modules/auth/hooks/use-auth';
 import { useVendorDashboard } from '@/modules/marketplace';
 import { getNextOnboardingRoute } from '@/modules/onboarding/lib/onboarding';
-import { selectOnboardingSnapshot, useVendorOnboardingStore } from '@/modules/onboarding/store/use-onboarding-store';
+import { selectOnboardingSnapshot, useOnboardingStore } from '@/modules/onboarding/store/use-onboarding-store';
 import { VerificationPromptCard } from '@/modules/onboarding/components/VerificationPromptCard';
 import { GroupLoading } from '@/shared/components/feedback/group-loading';
 import { OrdersChart } from '@/shared/components/dashboard/orders-chart';
@@ -25,7 +25,7 @@ import { routes } from '@/shared/constants/routes';
 export default function VendorDashboardPage() {
   const router = useRouter();
   const { isHydrated, session } = useAuth();
-  const onboarding = useVendorOnboardingStore(useShallow(selectOnboardingSnapshot));
+  const onboarding = useOnboardingStore(useShallow(selectOnboardingSnapshot));
   const { data, isLoading } = useVendorDashboard();
   const nextOnboardingRoute = getNextOnboardingRoute(onboarding, session);
 

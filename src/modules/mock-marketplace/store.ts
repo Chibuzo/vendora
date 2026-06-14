@@ -45,6 +45,10 @@ type MarketplaceVendor = {
         city: string;
         addressLine1: string;
     } | null;
+    logoUrl?: string | null;
+    bannerUrl?: string | null;
+    instagramUrl?: string | null;
+    whatsappUrl?: string | null;
     createdAt: string;
     updatedAt: string;
     cacNumber?: string;
@@ -73,6 +77,34 @@ type MarketplaceProduct = {
     updatedAt: string;
     featured: boolean;
 };
+
+type VendorProductPayload = {
+    name: string;
+    description?: string;
+    category: string;
+    price: number;
+    stockQuantity: number;
+    imageUrl?: string;
+};
+
+type VendorProductUpdatePayload = Partial<VendorProductPayload>;
+
+type VendorStorefrontPayload = {
+    logoUrl?: string | null;
+    bannerUrl?: string | null;
+    instagramUrl?: string | null;
+    whatsappUrl?: string | null;
+};
+
+type VendorVerificationPayload =
+    | string
+    | {
+        vendorId?: string;
+        cacNumber: string;
+        governmentIdUrl?: string;
+        businessProofUrl?: string;
+        socialMediaUrl?: string;
+    };
 
 type CartItem = {
     id: string;
@@ -775,6 +807,53 @@ function normalizeText(value?: string | null) {
     return value?.trim().toLowerCase() ?? '';
 }
 
+function resolveCategory(categoryName: string, fallback: MarketplaceProduct['category'] = categories[0]) {
+    const trimmedCategory = categoryName.trim();
+
+    if (!trimmedCategory) {
+        return { ...fallback };
+    }
+
+    const existingCategory = categories.find(
+        (category) => normalizeText(category.name) === normalizeText(trimmedCategory)
+    );
+
+    if (existingCategory) {
+        return { ...existingCategory };
+    }
+
+    return {
+        id: `cat_${slugify(trimmedCategory)}`,
+        name: trimmedCategory,
+        slug: slugify(trimmedCategory)
+    };
+}
+
+function createUniqueProductSlug(name: string, currentProductId?: string) {
+    const baseSlug = slugify(name) || `product-${crypto.randomUUID().slice(0, 8)}`;
+    let candidate = baseSlug;
+    let suffix = 2;
+
+    while ([...products.values()].some((product) => product.slug === candidate && product.id !== currentProductId)) {
+        candidate = `${baseSlug}-${suffix}`;
+        suffix += 1;
+    }
+
+    return candidate;
+}
+
+function getFallbackProductImageUrl(categoryName: string) {
+    const categoryMatch = [...products.values()].find(
+        (product) => normalizeText(product.category.name) === normalizeText(categoryName)
+    );
+
+    return (
+        categoryMatch?.images[0]?.url ??
+        products.values().next().value?.images[0]?.url ??
+        'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?auto=format&fit=crop&w=900&q=80'
+    );
+}
+
 function getVendorById(vendorId: string) {
     const vendor = vendors.get(vendorId);
 
@@ -807,6 +886,12 @@ function getUserById(userId: string) {
 
 function getVendorForUser(userId: string) {
     return [...vendors.values()].find((vendor) => vendor.ownerUserId === userId) ?? null;
+}
+
+function assertVendorAccess(userId: string, vendor: MarketplaceVendor) {
+    if (vendor.ownerUserId && vendor.ownerUserId !== userId) {
+        throw new Error('Unauthorized access to vendor profile.');
+    }
 }
 
 function calculateVariantDelta(product: MarketplaceProduct, selectedVariantIds: string[]) {
@@ -1029,6 +1114,10 @@ export function updateUserProfile(
 
     users.set(userId, nextUser);
     return clone(nextUser);
+}
+
+export function updateUserRole(userId: string, role: 'BUYER' | 'VENDOR') {
+    return updateUserProfile(userId, { role });
 }
 
 export function mapUserToSessionUser(user: MarketplaceUser): SessionUser {
@@ -1544,33 +1633,62 @@ export function upsertVendorForUser(
 }
 
 export function updateVendorLocation(userId: string, payload: { state: string; city: string; address: string }) {
-    const vendor = getVendorForUser(userId);
+  const vendor = getVendorForUser(userId);
 
-    if (!vendor) {
-        throw new Error('Vendor profile not found.');
-    }
+  if (!vendor) {
+    throw new Error('Vendor profile not found.');
+  }
 
-    const nextVendor: MarketplaceVendor = {
-        ...vendor,
-        location: {
-            id: vendor.location?.id ?? `vendor_location_${crypto.randomUUID()}`,
-            state: payload.state,
-            city: payload.city,
-            addressLine1: payload.address
-        },
-        updatedAt: new Date().toISOString()
-    };
+  const nextVendor: MarketplaceVendor = {
+    ...vendor,
+    location: {
+      id: vendor.location?.id ?? `vendor_location_${crypto.randomUUID()}`,
+      state: payload.state,
+      city: payload.city,
+      addressLine1: payload.address
+    },
+    updatedAt: new Date().toISOString()
+  };
 
-    vendors.set(vendor.id, nextVendor);
-    return clone(nextVendor);
+  vendors.set(vendor.id, nextVendor);
+  return clone(nextVendor);
 }
 
-export function submitVendorVerification(userId: string, cacNumber: string) {
-    const vendor = getVendorForUser(userId);
+// New function to update vendor location by vendorId (used in API route)
+export function updateVendorLocationById(userId: string, vendorId: string, payload: { state: string; city: string; address: string }) {
+  const vendor = vendors.get(vendorId);
+
+  if (!vendor) {
+    throw new Error('Vendor profile not found.');
+  }
+
+  assertVendorAccess(userId, vendor);
+
+  const nextVendor: MarketplaceVendor = {
+    ...vendor,
+    location: {
+      id: vendor.location?.id ?? `vendor_location_${crypto.randomUUID()}`,
+      state: payload.state,
+      city: payload.city,
+      addressLine1: payload.address
+    },
+    updatedAt: new Date().toISOString()
+  };
+
+  vendors.set(vendor.id, nextVendor);
+  return clone(nextVendor);
+}
+
+export function submitVendorVerification(userId: string, input: VendorVerificationPayload) {
+    const vendorId = typeof input === 'string' ? undefined : input.vendorId;
+    const cacNumber = typeof input === 'string' ? input : input.cacNumber;
+    const vendor = vendorId ? vendors.get(vendorId) ?? null : getVendorForUser(userId);
 
     if (!vendor) {
         throw new Error('Vendor profile not found.');
     }
+
+    assertVendorAccess(userId, vendor);
 
     const nextVendor: MarketplaceVendor = {
         ...vendor,
@@ -1597,6 +1715,55 @@ export function submitVendorVerification(userId: string, cacNumber: string) {
     return clone(nextVendor);
 }
 
+/**
+ * Get onboarding status for a vendor belonging to a user.
+ * Returns an object indicating whether onboarding is completed.
+ */
+export function getVendorOnboardingStatus(userId: string, vendorId: string) {
+    const vendor = vendors.get(vendorId);
+    if (!vendor) {
+        throw new Error('Vendor not found.');
+    }
+    // Ensure the requesting user owns this vendor (or is admin)
+    if (vendor.ownerUserId && vendor.ownerUserId !== userId) {
+        throw new Error('Unauthorized access to vendor onboarding status.');
+    }
+    // Onboarding is considered complete when the vendor has location and CAC number set
+    const onboardingCompleted = Boolean(vendor.location && vendor.cacNumber);
+    return clone({ onboardingCompleted });
+}
+
+/**
+ * Mark vendor onboarding as completed.
+ * If `completed` is true, the vendor's verification status is set to VERIFIED and a mock CAC number is added if missing.
+ */
+export function completeVendorOnboarding(userId: string, vendorId: string, completed: boolean) {
+    const vendor = vendors.get(vendorId);
+    if (!vendor) {
+        throw new Error('Vendor not found.');
+    }
+    if (vendor.ownerUserId && vendor.ownerUserId !== userId) {
+        throw new Error('Unauthorized attempt to complete onboarding.');
+    }
+    if (completed) {
+        const updatedVendor: MarketplaceVendor = {
+            ...vendor,
+            verificationStatus: VerificationStatus.VERIFIED,
+            cacNumber: vendor.cacNumber ?? `RC-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
+            // Ensure location is present; keep existing or set a placeholder
+            location: vendor.location ?? {
+                id: `vendor_location_${crypto.randomUUID()}`,
+                state: 'Unknown',
+                city: 'Unknown',
+                addressLine1: ''
+            },
+            updatedAt: new Date().toISOString()
+        };
+        vendors.set(vendor.id, updatedVendor);
+    }
+    return getVendorOnboardingStatus(userId, vendorId);
+}
+
 export function getVendorDashboard(userId: string) {
     const vendor = getVendorForUser(userId);
 
@@ -1604,42 +1771,81 @@ export function getVendorDashboard(userId: string) {
         return null;
     }
 
-    const vendorOrders = [...orders.values()].filter((order) => order.vendorId === vendor.id);
     const vendorProducts = [...products.values()].filter((product) => product.vendorId === vendor.id);
-    const totalRevenue = vendorOrders.reduce((sum, order) => sum + order.totalAmount, 0);
+    const vendorOrders = [...orders.values()].filter((order) => order.vendorId === vendor.id);
+    const balance = vendorBalances.get(vendor.id);
+    const orderRevenue = vendorOrders.reduce((sum, order) => sum + order.totalAmount, 0);
     const topProducts = vendorProducts
-        .map((product, index) => ({
-            name: product.name,
-            unitsSold: 12 + index * 9,
-            revenue: (12 + index * 9) * product.price,
-            trustStatus: vendor.verificationStatus === 'VERIFIED' ? 'verified' : 'high-trust'
-        }))
-        .slice(0, 3);
+        .map((product) => {
+            const productOrderItems = vendorOrders.flatMap((order) =>
+                order.items
+                    .filter((item) => item.productId === product.id)
+                    .map((item) => ({
+                        ...item,
+                        order
+                    }))
+            );
+            const unitsSold = productOrderItems.reduce((sum, item) => sum + item.quantity, 0);
+            const revenue = productOrderItems.reduce((sum, item) => {
+                return sum + (product.price + calculateVariantDelta(product, item.selectedVariantIds)) * item.quantity;
+            }, 0);
+            const fallbackUnitsSold = unitsSold || Math.min(Math.max(product.stockQuantity, 1), 24);
+
+            return {
+                name: product.name,
+                unitsSold: fallbackUnitsSold,
+                revenue: revenue || product.price * fallbackUnitsSold,
+                trustStatus: vendor.verificationStatus === VerificationStatus.VERIFIED ? 'verified' : 'high-trust'
+            };
+        })
+        .sort((left, right) => right.revenue - left.revenue)
+        .slice(0, 5);
+    const currentDate = new Date();
+    const monthFormatter = new Intl.DateTimeFormat('en', { month: 'short' });
+    const monthlyBuckets = Array.from({ length: 6 }, (_, index) => {
+        const bucketDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - (5 - index), 1);
+
+        return {
+            label: monthFormatter.format(bucketDate),
+            month: bucketDate.getMonth(),
+            year: bucketDate.getFullYear()
+        };
+    });
+    const revenuePoints = monthlyBuckets.map((bucket) => ({
+        label: bucket.label,
+        value: vendorOrders
+            .filter((order) => {
+                const orderDate = new Date(order.createdAt);
+                return orderDate.getMonth() === bucket.month && orderDate.getFullYear() === bucket.year;
+            })
+            .reduce((sum, order) => sum + order.totalAmount, 0)
+    }));
+    const orderPoints = monthlyBuckets.map((bucket) => ({
+        label: bucket.label,
+        value: vendorOrders.filter((order) => {
+            const orderDate = new Date(order.createdAt);
+            return orderDate.getMonth() === bucket.month && orderDate.getFullYear() === bucket.year;
+        }).length
+    }));
+    const recentOrders = vendorOrders
+        .sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt))
+        .slice(0, 5)
+        .map(buildOrderView);
 
     return clone({
         vendor: toVendorCard(vendor),
         stats: {
-            revenue: totalRevenue,
-            orders: vendorOrders.length,
+            revenue: orderRevenue || topProducts.reduce((sum, product) => sum + product.revenue, 0),
+            orders: vendor.totalOrders || vendorOrders.length,
             rating: vendor.rating,
-            balance: vendorBalances.get(vendor.id)?.availableBalance ?? 0
+            balance: balance?.availableBalance ?? 0,
+            productCount: vendorProducts.length,
+            trustScore: vendor.trustScore
         },
-        revenuePoints: [
-            { label: 'Mon', value: 95000 },
-            { label: 'Tue', value: 126000 },
-            { label: 'Wed', value: 182000 },
-            { label: 'Thu', value: 148000 },
-            { label: 'Fri', value: 214000 }
-        ],
-        orderPoints: [
-            { label: 'Mon', value: 4 },
-            { label: 'Tue', value: 6 },
-            { label: 'Wed', value: 9 },
-            { label: 'Thu', value: 7 },
-            { label: 'Fri', value: 11 }
-        ],
+        revenuePoints,
+        orderPoints,
         topProducts,
-        recentOrders: vendorOrders.slice(0, 5).map(buildOrderView)
+        recentOrders
     });
 }
 
@@ -1658,84 +1864,134 @@ export function listVendorProducts(userId: string) {
     );
 }
 
-export function createVendorProduct(
-    userId: string,
-    payload: { name: string; description: string; category: string; price: number; stockQuantity: number }
-) {
+export function createVendorProduct(userId: string, payload: VendorProductPayload) {
     const vendor = getVendorForUser(userId);
 
     if (!vendor) {
         throw new Error('Vendor profile not found.');
     }
 
-    const category = categories.find((entry) => entry.name === payload.category) ?? {
-        id: `cat_${slugify(payload.category)}`,
-        name: payload.category,
-        slug: slugify(payload.category)
-    };
+    const name = payload.name.trim();
+
+    if (!name) {
+        throw new Error('Product name is required.');
+    }
+
+    if (!Number.isFinite(payload.price) || payload.price <= 0) {
+        throw new Error('Product price must be greater than zero.');
+    }
+
+    const category = resolveCategory(payload.category || vendor.category);
     const createdAt = new Date().toISOString();
-    const nextProduct: MarketplaceProduct = {
-        id: `prod_${crypto.randomUUID()}`,
+    const productId = `prod_${crypto.randomUUID()}`;
+    const imageUrl = payload.imageUrl?.trim() || getFallbackProductImageUrl(category.name);
+    const stockQuantity = Number.isFinite(payload.stockQuantity)
+        ? Math.max(0, Math.floor(payload.stockQuantity))
+        : 0;
+    const tags = [category.name, vendor.category, vendor.location?.city, vendor.location?.state]
+        .filter((value): value is string => Boolean(value))
+        .map((value) => slugify(value))
+        .filter((tag) => tag.length > 0);
+    const product: MarketplaceProduct = {
+        id: productId,
         vendorId: vendor.id,
-        slug: slugify(payload.name),
-        name: payload.name,
-        description: payload.description,
+        slug: createUniqueProductSlug(name),
+        name,
+        description: payload.description?.trim() || `${name} from ${vendor.businessName}.`,
         category,
         price: payload.price,
         currency: 'NGN',
-        stockQuantity: payload.stockQuantity,
-        tags: [payload.category.toLowerCase()],
+        stockQuantity,
+        tags,
         isActive: true,
-        isAvailable: payload.stockQuantity > 0,
+        isAvailable: stockQuantity > 0,
         images: [
             {
-                id: `img_${crypto.randomUUID()}`,
-                url: 'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?auto=format&fit=crop&w=900&q=80'
+                id: `${productId}_img_1`,
+                url: imageUrl
             }
         ],
-        variants: [{ id: `var_${crypto.randomUUID()}`, name: 'Standard', priceDelta: 0 }],
+        variants: [],
         createdAt,
         updatedAt: createdAt,
         featured: false
     };
 
-    products.set(nextProduct.id, nextProduct);
-    return clone(toProductCard(nextProduct));
+    products.set(product.id, product);
+    return clone(toProductCard(product));
 }
 
-export function updateVendorProduct(
-    userId: string,
-    productId: string,
-    payload: Partial<{ name: string; description: string; category: string; price: number; stockQuantity: number }>
-) {
+export function updateVendorProduct(userId: string, productId: string, payload: VendorProductUpdatePayload) {
     const vendor = getVendorForUser(userId);
-    const product = getProductById(productId);
+    const product = products.get(productId);
 
-    if (!vendor || product.vendorId !== vendor.id) {
+    if (!vendor || !product || product.vendorId !== vendor.id) {
         throw new Error('Product not found.');
     }
 
-    const nextCategory = payload.category
-        ? categories.find((entry) => entry.name === payload.category) ?? {
-            id: `cat_${slugify(payload.category)}`,
-            name: payload.category,
-            slug: slugify(payload.category)
-        }
-        : product.category;
+    const nextName = payload.name !== undefined ? payload.name.trim() : product.name;
+
+    if (!nextName) {
+        throw new Error('Product name is required.');
+    }
+
+    const nextPrice = payload.price ?? product.price;
+
+    if (!Number.isFinite(nextPrice) || nextPrice <= 0) {
+        throw new Error('Product price must be greater than zero.');
+    }
+
+    const nextStockQuantity =
+        payload.stockQuantity !== undefined && Number.isFinite(payload.stockQuantity)
+            ? Math.max(0, Math.floor(payload.stockQuantity))
+            : product.stockQuantity;
+    const nextCategory =
+        payload.category !== undefined ? resolveCategory(payload.category, product.category) : product.category;
+    const nextImageUrl = payload.imageUrl?.trim();
     const nextProduct: MarketplaceProduct = {
         ...product,
-        name: payload.name ?? product.name,
-        slug: payload.name ? slugify(payload.name) : product.slug,
-        description: payload.description ?? product.description,
+        name: nextName,
+        slug: nextName === product.name ? product.slug : createUniqueProductSlug(nextName, product.id),
+        description: payload.description !== undefined ? payload.description.trim() : product.description,
         category: nextCategory,
-        price: payload.price ?? product.price,
-        stockQuantity: payload.stockQuantity ?? product.stockQuantity,
-        isAvailable: (payload.stockQuantity ?? product.stockQuantity) > 0,
+        price: nextPrice,
+        stockQuantity: nextStockQuantity,
+        isAvailable: nextStockQuantity > 0,
+        images: nextImageUrl
+            ? [
+                {
+                    id: product.images[0]?.id ?? `${product.id}_img_1`,
+                    url: nextImageUrl
+                }
+            ]
+            : product.images,
         updatedAt: new Date().toISOString()
     };
 
     products.set(product.id, nextProduct);
     return clone(toProductCard(nextProduct));
+}
+
+export function updateVendorStorefront(userId: string, vendorId: string, payload: VendorStorefrontPayload) {
+    const vendor = vendors.get(vendorId);
+
+    if (!vendor) {
+        throw new Error('Vendor profile not found.');
+    }
+
+    assertVendorAccess(userId, vendor);
+
+    const nextVendor: MarketplaceVendor = {
+        ...vendor,
+        logoUrl: payload.logoUrl === undefined ? vendor.logoUrl ?? null : payload.logoUrl,
+        bannerUrl: payload.bannerUrl === undefined ? vendor.bannerUrl ?? null : payload.bannerUrl,
+        instagramUrl: payload.instagramUrl === undefined ? vendor.instagramUrl ?? null : payload.instagramUrl,
+        whatsappUrl: payload.whatsappUrl === undefined ? vendor.whatsappUrl ?? null : payload.whatsappUrl,
+        updatedAt: new Date().toISOString()
+    };
+
+    vendors.set(vendor.id, nextVendor);
+    return clone(nextVendor);
 }
 
 export function deleteVendorProduct(userId: string, productId: string) {

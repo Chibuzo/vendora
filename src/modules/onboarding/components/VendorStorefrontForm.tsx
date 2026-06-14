@@ -60,7 +60,7 @@ export function VendorStorefrontForm() {
   };
 
   const skip = () => {
-    completeStorefront();
+    completeStorefront({});
     showToast({
       title: 'Storefront media skipped',
       description: 'You can add public storefront details from settings later.',

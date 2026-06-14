@@ -143,6 +143,8 @@ export interface VendorDashboardData {
     orders: number;
     rating: number;
     balance: number;
+    productCount: number;
+    trustScore: number;
   };
   revenuePoints: Array<{ label: string; value: number }>;
   orderPoints: Array<{ label: string; value: number }>;
