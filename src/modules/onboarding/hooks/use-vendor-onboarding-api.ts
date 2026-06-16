@@ -40,8 +40,8 @@ export interface CreateVendorInput {
 }
 
 export interface CreateVendorLocationInput {
-  state: string;
-  city: string;
+  stateId: number;
+  cityId: number;
   address?: string;
   latitude?: number;
   longitude?: number;
@@ -207,5 +207,26 @@ export function useSubmitVendorVerification() {
     onSuccess(vendor) {
       queryClient.setQueryData(onboardingKeys.vendor, vendor);
     }
+  });
+}
+
+export type LocationState = { id: number; name: string };
+export type LocationCity = { id: number; name: string; stateId: number };
+
+export function useStates() {
+  return useQuery({
+    queryKey: ['locations', 'states'],
+    queryFn: async () => (await apiClient.get<LocationState[]>('/locations/states')).data
+  });
+}
+
+export function useCities(stateId?: number | null) {
+  return useQuery({
+    queryKey: ['locations', 'cities', stateId],
+    queryFn: async () => {
+      if (!stateId) return [];
+      return (await apiClient.get<LocationCity[]>(`/locations/states/${stateId}/cities`)).data;
+    },
+    enabled: !!stateId
   });
 }

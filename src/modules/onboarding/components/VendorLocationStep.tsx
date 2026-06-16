@@ -11,10 +11,12 @@ import { useToast } from '@/shared/components/feedback/toast';
 import { Button } from '@/shared/components/ui/button';
 import { CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
+import { Select } from '@/shared/components/ui/select';
+import { useStates, useCities } from '@/modules/onboarding/hooks/use-vendor-onboarding-api';
 
 interface VendorLocationFormValues {
-  state: string;
-  city: string;
+  stateId: string;
+  cityId: string;
   address: string;
 }
 
@@ -25,13 +27,25 @@ export function VendorLocationStep() {
   const region = useOnboardingStore((state) => state.region);
   const completeLocation = useOnboardingStore((state) => state.completeLocation);
   const locationMutation = useCreateVendorLocation();
+
+  const { data: states = [], isLoading: isLoadingStates } = useStates();
+
   const form = useForm<VendorLocationFormValues>({
     defaultValues: {
-      state: region,
-      city,
+      stateId: '',
+      cityId: '',
       address: ''
     }
   });
+
+  const selectedStateId = form.watch('stateId');
+  const { data: cities = [], isLoading: isLoadingCities } = useCities(
+    selectedStateId ? Number(selectedStateId) : null
+  );
+
+  // Register the fields manually to apply validation rules
+  form.register('stateId', { required: 'State is required.' });
+  form.register('cityId', { required: 'City is required.' });
 
   return (
     <form
@@ -40,13 +54,13 @@ export function VendorLocationStep() {
         void (async () => {
           try {
             await locationMutation.mutateAsync({
-              state: values.state,
-              city: values.city,
+              stateId: Number(values.stateId),
+              cityId: Number(values.cityId),
               address: values.address
             });
             completeLocation({
-              city: values.city,
-              region: values.state
+              city: cities.find((c) => c.id === Number(values.cityId))?.name || '',
+              region: states.find((s) => s.id === Number(values.stateId))?.name || ''
             });
             showToast({
               title: 'Location saved',
@@ -69,17 +83,26 @@ export function VendorLocationStep() {
         <CardDescription>Use location data for delivery estimates, trust badges, and regional search filters.</CardDescription>
       </CardHeader>
       <div className="grid gap-4 md:grid-cols-2">
-        <Input
+        <Select
           label="State"
-          placeholder="Lagos"
-          error={form.formState.errors.state?.message}
-          {...form.register('state', { required: 'State is required.' })}
+          placeholder={isLoadingStates ? "Loading..." : "Select state"}
+          options={states.map(state => ({ label: state.name, value: String(state.id) }))}
+          value={form.watch('stateId')}
+          onValueChange={(val) => {
+            form.setValue('stateId', val);
+            form.setValue('cityId', ''); // Reset city when state changes
+          }}
+          error={form.formState.errors.stateId?.message}
+          disabled={isLoadingStates}
         />
-        <Input
+        <Select
           label="City"
-          placeholder="Lagos"
-          error={form.formState.errors.city?.message}
-          {...form.register('city', { required: 'City is required.' })}
+          placeholder={isLoadingCities ? "Loading..." : "Select city"}
+          options={cities.map(city => ({ label: city.name, value: String(city.id) }))}
+          value={form.watch('cityId')}
+          onValueChange={(val) => form.setValue('cityId', val)}
+          error={form.formState.errors.cityId?.message}
+          disabled={!selectedStateId || isLoadingCities}
         />
       </div>
       <Input

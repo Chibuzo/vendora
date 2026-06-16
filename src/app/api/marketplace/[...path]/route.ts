@@ -80,7 +80,7 @@ export async function GET(
   { params }: Readonly<{ params: Promise<{ path: string[] }> }>
 ) {
   const { path } = await params;
-  
+
   // ALWAYS USE MOCKS FOR MARKETPLACE ENDPOINTS UNTIL BACKEND IS READY
   // if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
   //   return proxyToBackend(request, proxyPath(request, path));
@@ -210,8 +210,6 @@ export async function POST(
 
   try {
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
-
-    if (resource === 'cart' && identifier === 'items') {
 
     if (resource === 'vendor' && identifier === 'products') {
       return response(
