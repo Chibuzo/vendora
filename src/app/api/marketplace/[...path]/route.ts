@@ -80,10 +80,11 @@ export async function GET(
   { params }: Readonly<{ params: Promise<{ path: string[] }> }>
 ) {
   const { path } = await params;
-
-  if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
-    return proxyToBackend(request, proxyPath(request, path));
-  }
+  
+  // ALWAYS USE MOCKS FOR MARKETPLACE ENDPOINTS UNTIL BACKEND IS READY
+  // if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
+  //   return proxyToBackend(request, proxyPath(request, path));
+  // }
 
   const [resource, identifier] = path;
   const query = request.nextUrl.searchParams;
@@ -200,9 +201,10 @@ export async function POST(
 ) {
   const { path } = await params;
 
-  if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
-    return proxyToBackend(request, proxyPath(request, path));
-  }
+  // ALWAYS USE MOCKS FOR MARKETPLACE ENDPOINTS UNTIL BACKEND IS READY
+  // if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
+  //   return proxyToBackend(request, proxyPath(request, path));
+  // }
 
   const [resource, identifier, nested] = path;
 
@@ -210,69 +212,6 @@ export async function POST(
     const body = (await request.json().catch(() => ({}))) as Record<string, unknown>;
 
     if (resource === 'cart' && identifier === 'items') {
-      return response(
-        addCartItem(requireUserId(request), {
-          productId: String(body.productId ?? ''),
-          quantity: Number(body.quantity ?? 1),
-          selectedVariantIds: Array.isArray(body.selectedVariantIds) ? body.selectedVariantIds.map(String) : []
-        })
-      );
-    }
-
-    if (resource === 'orders') {
-      return response(
-        createOrder(requireUserId(request), {
-          vendorId: String(body.vendorId ?? ''),
-          deliveryAddress: String(body.deliveryAddress ?? ''),
-          items: Array.isArray(body.items)
-            ? (body.items as Array<Record<string, unknown>>).map((item) => ({
-                productId: String(item.productId ?? ''),
-                quantity: Number(item.quantity ?? 1),
-                selectedVariantIds: Array.isArray(item.selectedVariantIds)
-                  ? item.selectedVariantIds.map(String)
-                  : []
-              }))
-            : []
-        }),
-        201
-      );
-    }
-
-    if (resource === 'payments' && identifier === 'initialize') {
-      return response(
-        initializePayment(
-          Number(body.amount ?? 0),
-          typeof body.email === 'string' ? body.email : undefined
-        )
-      );
-    }
-
-    if (resource === 'onboarding' && identifier === 'vendor' && !nested) {
-      return response(
-        upsertVendorForUser(requireUserId(request), {
-          businessName: String(body.businessName ?? ''),
-          description: String(body.description ?? ''),
-          phone: String(body.phone ?? ''),
-          category: String(body.category ?? 'General')
-        })
-      );
-    }
-
-    if (resource === 'onboarding' && identifier === 'vendor' && nested === 'location') {
-      return response(
-        updateVendorLocation(requireUserId(request), {
-          state: String(body.state ?? ''),
-          city: String(body.city ?? ''),
-          address: String(body.address ?? '')
-        })
-      );
-    }
-
-    if (resource === 'onboarding' && identifier === 'vendor' && nested === 'verification') {
-      return response(
-        submitVendorVerification(requireUserId(request), String(body.cacNumber ?? ''))
-      );
-    }
 
     if (resource === 'vendor' && identifier === 'products') {
       return response(
@@ -307,9 +246,10 @@ export async function PATCH(
 ) {
   const { path } = await params;
 
-  if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
-    return proxyToBackend(request, proxyPath(request, path));
-  }
+  // ALWAYS USE MOCKS FOR MARKETPLACE ENDPOINTS UNTIL BACKEND IS READY
+  // if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
+  //   return proxyToBackend(request, proxyPath(request, path));
+  // }
 
   const [resource, identifier, nested] = path;
 
@@ -366,9 +306,10 @@ export async function DELETE(
 ) {
   const { path } = await params;
 
-  if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
-    return proxyToBackend(request, proxyPath(request, path));
-  }
+  // ALWAYS USE MOCKS FOR MARKETPLACE ENDPOINTS UNTIL BACKEND IS READY
+  // if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
+  //   return proxyToBackend(request, proxyPath(request, path));
+  // }
 
   const [resource, identifier, nested] = path;
 

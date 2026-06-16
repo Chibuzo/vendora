@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     try {
         if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
-            const upstream = await requestBackend<unknown>('/auth/login/email', {
+            const upstream = await requestBackend<unknown>('/auth/login', {
                 method: 'POST',
                 body: parsed.data
             });

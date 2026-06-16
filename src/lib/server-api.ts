@@ -17,6 +17,14 @@ function normalizeEnvelope<T>(payload: unknown) {
         return payload;
     }
 
+    if (payload && typeof payload === 'object' && 'error' in payload) {
+        return {
+            data: null,
+            meta: { timestamp: new Date().toISOString() },
+            error: (payload as { error: unknown }).error
+        };
+    }
+
     return toApiEnvelope(payload as T);
 }
 

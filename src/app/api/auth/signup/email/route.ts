@@ -29,13 +29,16 @@ export async function POST(request: Request) {
         if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
             const upstream = await requestBackend<unknown>('/auth/register', {
                 method: 'POST',
-                body: parsed.data
+                body: {
+                    name: parsed.data.fullName,
+                    email: parsed.data.email,
+                    password: parsed.data.password
+                }
             });
 
             if (upstream.status >= 400) {
                 return NextResponse.json(upstream.body, { status: upstream.status });
             }
-
             const auth = coerceAuthPayload(upstream.body.data);
             return authSessionResponse<LoginResponse>(
                 {

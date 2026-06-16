@@ -5,7 +5,7 @@ import { readSessionState, SESSION_COOKIE, SESSION_STATE_COOKIE } from '@/lib/au
 import { toApiEnvelope } from '@/lib/api-client';
 import { requestBackend } from '@/lib/server-api';
 import { authError, authSessionResponse } from '@/app/api/auth/_utils';
-import { completeMockSignup, completeSignupSchema } from '@/modules/auth/services/auth-service';
+import { coerceAuthPayload, completeMockSignup, completeSignupSchema } from '@/modules/auth/services/auth-service';
 
 export async function POST(request: NextRequest) {
   const session = readSessionState(request.cookies.get(SESSION_STATE_COOKIE)?.value);
@@ -41,7 +41,26 @@ export async function POST(request: NextRequest) {
         accessToken
       });
 
-      return NextResponse.json(upstream.body, { status: upstream.status });
+      if (upstream.status >= 400) {
+        return NextResponse.json(upstream.body, { status: upstream.status });
+      }
+
+      const auth = coerceAuthPayload(
+        typeof upstream.body === 'object' && upstream.body && 'data' in upstream.body
+          ? (upstream.body as { data: unknown }).data
+          : upstream.body
+      );
+
+      // The frontend useAuth hook expects an ApiUser shaped response
+      const userResponse = {
+        id: auth.session.user.id,
+        fullName: auth.session.user.name,
+        email: auth.session.user.email,
+        phone: auth.session.user.phone,
+        role: auth.session.user.role.toUpperCase()
+      };
+
+      return authSessionResponse(userResponse, auth, 200);
     }
 
     const result = completeMockSignup(session.user.id, parsed.data);

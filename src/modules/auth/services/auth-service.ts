@@ -400,11 +400,12 @@ export function coerceAuthPayload(payload: unknown, currentRefreshToken?: string
         normalizeSession(candidate?.session) ??
         normalizeSession(payload) ??
         (typeof candidate?.accessToken === 'string' &&
-            typeof candidate?.accessTokenExpiresAt === 'string' &&
             normalizeSessionUser(candidate?.user)
             ? ({
                 token: candidate.accessToken,
-                expiresAt: candidate.accessTokenExpiresAt,
+                expiresAt: typeof candidate.accessTokenExpiresAt === 'string'
+                    ? candidate.accessTokenExpiresAt
+                    : new Date(Date.now() + 15 * 60 * 1000).toISOString(),
                 user: normalizeSessionUser(candidate.user)!
             } satisfies Session)
             : null);

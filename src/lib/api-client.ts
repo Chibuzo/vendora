@@ -55,6 +55,14 @@ function normalizeEnvelope<T>(payload: unknown): ApiEnvelope<T> {
         return payload as ApiEnvelope<T>;
     }
 
+    if (payload && typeof payload === 'object' && 'error' in payload) {
+        return {
+            data: null as unknown as T,
+            meta: normalizeMeta(),
+            error: (payload as { error: ApiError }).error
+        };
+    }
+
     return toApiEnvelope(payload as T);
 }
 
@@ -93,6 +101,31 @@ async function attemptTokenRefresh(baseUrl: string, path: string) {
     return refreshResponse.ok;
 }
 
+function formatErrorMessage(error?: ApiError): string {
+    if (!error) return 'Request failed';
+
+    if (error.details && Array.isArray(error.details) && error.details.length > 0) {
+        const details = error.details as Array<{ message?: string; path?: string }>;
+        const formattedDetails = details
+            .map((detail) => {
+                if (!detail.message) return null;
+                if (detail.message === 'Required' && detail.path) {
+                    // Capitalize the path name for a better message
+                    const fieldName = detail.path.charAt(0).toUpperCase() + detail.path.slice(1);
+                    return `${fieldName} is required`;
+                }
+                return detail.message;
+            })
+            .filter(Boolean);
+
+        if (formattedDetails.length > 0) {
+            return formattedDetails.join(', ');
+        }
+    }
+
+    return error.message?.replace(/^Validation failed:\s*/i, '') || 'Request failed';
+}
+
 async function request<T>(baseUrl: string, path: string, init: JsonRequestInit = {}, allowRetry = true) {
     const headers = new Headers(init.headers);
     const body = toJsonBody(init.body as BodyInit | JsonRecord | undefined);
@@ -117,7 +150,7 @@ async function request<T>(baseUrl: string, path: string, init: JsonRequestInit =
 
     if (!response.ok) {
         throw new ApiClientError(
-            normalized.error?.message ?? 'Request failed',
+            formatErrorMessage(normalized.error),
             response.status,
             normalized.error
         );
