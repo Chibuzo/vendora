@@ -4,7 +4,7 @@ import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
-import { useVendorVerification } from '@/modules/marketplace';
+import { useSubmitVendorVerification } from '@/modules/onboarding/hooks/use-vendor-onboarding-api';
 import { useOnboardingStore } from '@/modules/onboarding/store/use-onboarding-store';
 import { routes } from '@/shared/constants/routes';
 import { useToast } from '@/shared/components/feedback/toast';
@@ -20,7 +20,7 @@ export function VendorVerificationStep() {
   const router = useRouter();
   const { showToast } = useToast();
   const submitVerification = useOnboardingStore((state) => state.submitVerification);
-  const verificationMutation = useVendorVerification();
+  const verificationMutation = useSubmitVendorVerification();
   const form = useForm<VerificationFormValues>({
     defaultValues: {
       cacNumber: ''
@@ -32,16 +32,26 @@ export function VendorVerificationStep() {
       className="space-y-6"
       onSubmit={form.handleSubmit((values) => {
         void (async () => {
-          await verificationMutation.mutateAsync(values);
-          submitVerification({
-            verificationNotes: values.cacNumber
-          });
-          showToast({
-            title: 'Verification submitted',
-            description: 'Your vendor dashboard is now unlocked.',
-            variant: 'success'
-          });
-          router.push(routes.vendor.dashboard as Route);
+          try {
+            await verificationMutation.mutateAsync({
+              cacNumber: values.cacNumber
+            });
+            submitVerification({
+              verificationNotes: values.cacNumber
+            });
+            showToast({
+              title: 'Verification submitted',
+              description: 'Your vendor dashboard is now unlocked.',
+              variant: 'success'
+            });
+            router.push(routes.vendor.dashboard as Route);
+          } catch (error) {
+            showToast({
+              title: 'Verification not submitted',
+              description: error instanceof Error ? error.message : 'Check the details and try again.',
+              variant: 'danger'
+            });
+          }
         })();
       })}
     >

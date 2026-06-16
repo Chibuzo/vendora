@@ -4,7 +4,7 @@ import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
-import { useVendorLocation } from '@/modules/marketplace';
+import { useCreateVendorLocation } from '@/modules/onboarding/hooks/use-vendor-onboarding-api';
 import { useOnboardingStore } from '@/modules/onboarding/store/use-onboarding-store';
 import { routes } from '@/shared/constants/routes';
 import { useToast } from '@/shared/components/feedback/toast';
@@ -24,7 +24,7 @@ export function VendorLocationStep() {
   const city = useOnboardingStore((state) => state.city);
   const region = useOnboardingStore((state) => state.region);
   const completeLocation = useOnboardingStore((state) => state.completeLocation);
-  const locationMutation = useVendorLocation();
+  const locationMutation = useCreateVendorLocation();
   const form = useForm<VendorLocationFormValues>({
     defaultValues: {
       state: region,
@@ -38,17 +38,29 @@ export function VendorLocationStep() {
       className="space-y-6"
       onSubmit={form.handleSubmit((values) => {
         void (async () => {
-          await locationMutation.mutateAsync(values);
-          completeLocation({
-            city: values.city,
-            region: values.state
-          });
-          showToast({
-            title: 'Location saved',
-            description: 'Your storefront is ready for verification.',
-            variant: 'success'
-          });
-          router.push(routes.onboarding.vendorVerification as Route);
+          try {
+            await locationMutation.mutateAsync({
+              state: values.state,
+              city: values.city,
+              address: values.address
+            });
+            completeLocation({
+              city: values.city,
+              region: values.state
+            });
+            showToast({
+              title: 'Location saved',
+              description: 'Your storefront is ready for verification.',
+              variant: 'success'
+            });
+            router.push(routes.onboarding.vendorStorefront as Route);
+          } catch (error) {
+            showToast({
+              title: 'Location not saved',
+              description: error instanceof Error ? error.message : 'Check the details and try again.',
+              variant: 'danger'
+            });
+          }
         })();
       })}
     >
@@ -77,7 +89,7 @@ export function VendorLocationStep() {
         {...form.register('address', { required: 'Business address is required.' })}
       />
       <Button type="submit" loading={locationMutation.isPending}>
-        Continue to verification
+        Continue to storefront setup
       </Button>
     </form>
   );

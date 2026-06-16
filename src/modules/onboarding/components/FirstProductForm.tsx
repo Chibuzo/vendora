@@ -79,13 +79,7 @@ export function FirstProductForm() {
   });
 
   const finishOnboarding = async () => {
-    if (!vendorId) {
-      router.replace(routes.onboarding.vendorBusiness as Route);
-      return;
-    }
-
     await completeOnboardingMutation.mutateAsync({
-      vendorId,
       onboardingCompleted: true
     });
     completeOnboarding();
@@ -117,11 +111,6 @@ export function FirstProductForm() {
       className="space-y-6"
       onSubmit={form.handleSubmit((values) => {
         void (async () => {
-          if (!vendorId) {
-            router.replace(routes.onboarding.vendorBusiness as Route);
-            return;
-          }
-
           try {
             const productDraft = {
               firstProductName: values.name,
@@ -134,7 +123,6 @@ export function FirstProductForm() {
 
             saveFirstProductDraft(productDraft);
             await createProductMutation.mutateAsync({
-              vendorId,
               name: values.name,
               category: values.category,
               price: Number(values.price),

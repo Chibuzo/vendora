@@ -34,7 +34,7 @@ export default async function RootLayout({
 
   return (
     <html lang="en" className={`${sans.variable} ${display.variable}`} data-tenant-theme="vendora">
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased" suppressHydrationWarning>
         <QueryProvider>
           <AuthProvider initialSession={initialSession}>
             <ToastProvider>{children}</ToastProvider>

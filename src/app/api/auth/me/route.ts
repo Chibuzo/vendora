@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
   }
 
   if (!env.NEXT_PUBLIC_ENABLE_MOCKS) {
-    const upstream = await requestBackend<unknown>('/users/me', {
+    const upstream = await requestBackend<unknown>('/auth/me', {
       method: 'GET',
       accessToken
     });

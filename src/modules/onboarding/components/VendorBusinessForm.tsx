@@ -69,12 +69,16 @@ export function VendorBusinessForm() {
               description: values.description ?? ''
             };
             saveBusinessDraft(normalizedValues);
-            const vendor = await createVendorMutation.mutateAsync({
-              ...normalizedValues
+            // Category is a local concept stored in our onboarding store only
+            const result = await createVendorMutation.mutateAsync({
+              businessName: normalizedValues.businessName,
+              phone: normalizedValues.phone,
+              description: normalizedValues.description,
+              whatsappNumber: normalizedValues.phone
             });
             completeBusinessProfile({
               ...normalizedValues,
-              vendorId: vendor.id
+              vendorId: result.vendor.id
             });
             completeVendorSetup({
               businessName: normalizedValues.businessName,

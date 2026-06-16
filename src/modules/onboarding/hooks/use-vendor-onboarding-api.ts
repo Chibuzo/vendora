@@ -9,64 +9,65 @@ export type ApiUser = {
   id: string;
   email?: string | null;
   phone?: string | null;
-  fullName: string;
+  name: string;
   role: 'BUYER' | 'VENDOR' | 'ADMIN';
 };
 
 export type VendorOnboardingVendor = {
   id: string;
-  slug: string;
   businessName: string;
-  description: string;
+  description: string | null;
   phone: string;
-  category: string;
-  verificationStatus: 'UNVERIFIED' | 'PENDING' | 'VERIFIED' | 'REJECTED';
+  logoUrl: string | null;
+  bannerUrl: string | null;
+  instagramUrl: string | null;
+  whatsappNumber: string | null;
+  verificationStatus: 'PENDING' | 'VERIFIED' | 'REJECTED';
   onboardingCompleted: boolean;
+  status: string;
+};
+
+export type VendorOnboardingResponse = {
+  activationStatus: string;
+  vendor: VendorOnboardingVendor;
 };
 
 export interface CreateVendorInput {
   businessName: string;
-  category: string;
   phone: string;
-  description: string;
+  description?: string;
+  whatsappNumber?: string;
 }
 
 export interface CreateVendorLocationInput {
-  vendorId: string;
   state: string;
   city: string;
-  address: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 export interface UpdateVendorStorefrontInput {
-  vendorId: string;
   logoUrl: string | null;
   bannerUrl: string | null;
   instagramUrl: string | null;
-  whatsappUrl: string | null;
 }
 
 export interface CreateVendorProductInput {
-  vendorId: string;
   name: string;
   category: string;
   price: number;
-  imageUrl: string;
-  stockQuantity: number;
-  description: string;
+  imageUrl?: string;
+  stockQuantity?: number;
+  description?: string;
 }
 
 export interface CompleteVendorOnboardingInput {
-  vendorId: string;
   onboardingCompleted: true;
 }
 
 export interface SubmitVendorVerificationInput {
-  vendorId: string;
   cacNumber: string;
-  governmentIdUrl: string;
-  businessProofUrl: string;
-  socialMediaUrl: string;
 }
 
 const onboardingKeys = {
@@ -74,13 +75,16 @@ const onboardingKeys = {
   vendor: ['onboarding', 'vendor'] as const
 };
 
-function sessionFromApiUser(session: NonNullable<ReturnType<typeof useAuthStore.getState>['session']>, user: ApiUser) {
+function sessionFromApiUser(
+  session: NonNullable<ReturnType<typeof useAuthStore.getState>['session']>,
+  user: ApiUser
+) {
   return {
     ...session,
     user: {
       ...session.user,
       id: user.id,
-      name: user.fullName || session.user.name,
+      name: user.name || session.user.name,
       role: user.role.toLowerCase() as typeof session.user.role,
       email: user.email ?? session.user.email
     }
@@ -117,9 +121,11 @@ export function useCreateVendor() {
 
   return useMutation({
     mutationFn: async (payload: CreateVendorInput) =>
-      (await apiClient.post<VendorOnboardingVendor, CreateVendorInput>('/vendors', payload)).data,
-    onSuccess(vendor) {
-      queryClient.setQueryData(onboardingKeys.vendor, vendor);
+      (
+        await apiClient.post<VendorOnboardingResponse, CreateVendorInput>('/vendors', payload)
+      ).data,
+    onSuccess(data) {
+      queryClient.setQueryData(onboardingKeys.vendor, data.vendor);
     }
   });
 }
@@ -128,15 +134,15 @@ export function useCreateVendorLocation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ vendorId, ...payload }: CreateVendorLocationInput) =>
+    mutationFn: async (payload: CreateVendorLocationInput) =>
       (
-        await apiClient.post<VendorOnboardingVendor, Omit<CreateVendorLocationInput, 'vendorId'>>(
-          `/vendors/${vendorId}/locations`,
+        await apiClient.post<VendorOnboardingResponse, CreateVendorLocationInput>(
+          '/vendors/locations',
           payload
         )
       ).data,
-    onSuccess(vendor) {
-      queryClient.setQueryData(onboardingKeys.vendor, vendor);
+    onSuccess(data) {
+      queryClient.setQueryData(onboardingKeys.vendor, data.vendor);
     }
   });
 }
@@ -145,10 +151,10 @@ export function useUpdateVendorStorefront() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ vendorId, ...payload }: UpdateVendorStorefrontInput) =>
+    mutationFn: async (payload: UpdateVendorStorefrontInput) =>
       (
-        await apiClient.patch<VendorOnboardingVendor, Omit<UpdateVendorStorefrontInput, 'vendorId'>>(
-          `/vendors/${vendorId}/storefront`,
+        await apiClient.patch<VendorOnboardingVendor, UpdateVendorStorefrontInput>(
+          '/vendors/me/storefront',
           payload
         )
       ).data,
@@ -160,10 +166,10 @@ export function useUpdateVendorStorefront() {
 
 export function useCreateVendorProduct() {
   return useMutation({
-    mutationFn: async ({ vendorId, ...payload }: CreateVendorProductInput) =>
+    mutationFn: async (payload: CreateVendorProductInput) =>
       (
-        await apiClient.post<unknown, Omit<CreateVendorProductInput, 'vendorId'>>(
-          `/vendors/${vendorId}/products`,
+        await apiClient.post<unknown, CreateVendorProductInput>(
+          '/vendors/me/products',
           payload
         )
       ).data
@@ -174,11 +180,11 @@ export function useCompleteVendorOnboarding() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ vendorId, onboardingCompleted }: CompleteVendorOnboardingInput) =>
+    mutationFn: async (payload: CompleteVendorOnboardingInput) =>
       (
-        await apiClient.patch<VendorOnboardingVendor, { onboardingCompleted: true }>(
-          `/vendors/${vendorId}/onboarding-status`,
-          { onboardingCompleted }
+        await apiClient.patch<VendorOnboardingVendor, CompleteVendorOnboardingInput>(
+          '/vendors/me/onboarding-status',
+          payload
         )
       ).data,
     onSuccess(vendor) {
@@ -191,10 +197,10 @@ export function useSubmitVendorVerification() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ vendorId, ...payload }: SubmitVendorVerificationInput) =>
+    mutationFn: async (payload: SubmitVendorVerificationInput) =>
       (
-        await apiClient.post<VendorOnboardingVendor, Omit<SubmitVendorVerificationInput, 'vendorId'>>(
-          `/vendors/${vendorId}/verification`,
+        await apiClient.post<VendorOnboardingVendor, SubmitVendorVerificationInput>(
+          '/vendors/verify',
           payload
         )
       ).data,

@@ -37,7 +37,6 @@ function nullable(value?: string) {
 export function VendorStorefrontForm() {
   const router = useRouter();
   const { showToast } = useToast();
-  const vendorId = useVendorOnboardingStore((state) => state.vendorId);
   const logoUrl = useVendorOnboardingStore((state) => state.logoUrl);
   const bannerUrl = useVendorOnboardingStore((state) => state.bannerUrl);
   const instagramUrl = useVendorOnboardingStore((state) => state.instagramUrl);
@@ -74,11 +73,6 @@ export function VendorStorefrontForm() {
       className="space-y-6"
       onSubmit={form.handleSubmit((values) => {
         void (async () => {
-          if (!vendorId) {
-            router.replace(routes.onboarding.vendorBusiness as Route);
-            return;
-          }
-
           try {
             saveStorefrontDraft({
               logoUrl: values.logoUrl ?? '',
@@ -87,11 +81,9 @@ export function VendorStorefrontForm() {
               whatsappUrl: values.whatsappUrl ?? ''
             });
             await storefrontMutation.mutateAsync({
-              vendorId,
               logoUrl: nullable(values.logoUrl),
               bannerUrl: nullable(values.bannerUrl),
-              instagramUrl: nullable(values.instagramUrl),
-              whatsappUrl: nullable(values.whatsappUrl)
+              instagramUrl: nullable(values.instagramUrl)
             });
             completeStorefront({
               logoUrl: values.logoUrl ?? '',
