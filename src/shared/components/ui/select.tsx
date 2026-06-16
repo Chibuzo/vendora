@@ -84,9 +84,9 @@ export function Select({
           <SelectPrimitive.Content
             position="popper"
             sideOffset={8}
-            className="z-50 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[var(--radius-xl)] border border-border/80 bg-card/95 p-1 shadow-soft-lg backdrop-blur"
+            className="z-50 max-h-[var(--radix-select-content-available-height)] max-h-80 min-w-[var(--radix-select-trigger-width)] overflow-hidden rounded-[var(--radius-xl)] border border-border/80 bg-card/95 p-1 shadow-soft-lg backdrop-blur"
           >
-            <SelectPrimitive.Viewport className="p-1">
+            <SelectPrimitive.Viewport className="p-1 h-full max-h-[calc(20rem-8px)] overflow-y-auto">
               {options.map((option) => (
                 <SelectPrimitive.Item
                   key={option.value}

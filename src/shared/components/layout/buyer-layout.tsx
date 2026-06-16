@@ -2,8 +2,8 @@
 
 import type { Route } from 'next';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Bell, ShoppingCart } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Bell, ShoppingCart, LogOut } from 'lucide-react';
 import { useEffect } from 'react';
 
 import { useAuth } from '@/modules/auth/hooks/use-auth';
@@ -24,7 +24,8 @@ import { cn, formatCurrency } from '@/lib/utils';
 
 export function BuyerLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname();
-  const { session } = useAuth();
+  const router = useRouter();
+  const { session, logout, isLogoutPending } = useAuth();
   const initials = session?.user.name
     .split(' ')
     .map((segment) => segment[0])
@@ -81,6 +82,30 @@ export function BuyerLayout({ children }: Readonly<{ children: React.ReactNode }
                 </Avatar>
                 <span className="hidden text-sm font-medium text-foreground sm:inline">{session?.user.name || 'Buyer'}</span>
               </Link>
+              {session ? (
+                <button
+                  type="button"
+                  className="inline-flex h-11 w-11 items-center justify-center rounded-full border border-border bg-surface text-muted-foreground transition hover:text-danger-700 hover:border-danger-200 hover:bg-danger-50"
+                  aria-label="Log out"
+                  onClick={() => {
+                    void (async () => {
+                      await logout().catch(() => null);
+                      router.push(routes.auth.login as Route);
+                      router.refresh();
+                    })();
+                  }}
+                  disabled={isLogoutPending}
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              ) : (
+                <Link
+                  href={routes.auth.login as Route}
+                  className="inline-flex h-11 items-center justify-center rounded-full border border-border bg-surface px-4 text-sm font-medium text-foreground transition hover:bg-neutral-50"
+                >
+                  Log in
+                </Link>
+              )}
             </div>
           </div>
           <div className="grid gap-3 lg:grid-cols-[1fr_auto] lg:items-center">

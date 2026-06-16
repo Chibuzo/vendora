@@ -86,7 +86,7 @@ export function VendorLocationStep() {
         <Select
           label="State"
           placeholder={isLoadingStates ? "Loading..." : "Select state"}
-          options={states.map(state => ({ label: state.name, value: String(state.id) }))}
+          options={Array.isArray(states) ? states.map(state => ({ label: state.name, value: String(state.id) })) : []}
           value={form.watch('stateId')}
           onValueChange={(val) => {
             form.setValue('stateId', val);
@@ -98,7 +98,7 @@ export function VendorLocationStep() {
         <Select
           label="City"
           placeholder={isLoadingCities ? "Loading..." : "Select city"}
-          options={cities.map(city => ({ label: city.name, value: String(city.id) }))}
+          options={Array.isArray(cities) ? cities.map(city => ({ label: city.name, value: String(city.id) })) : []}
           value={form.watch('cityId')}
           onValueChange={(val) => form.setValue('cityId', val)}
           error={form.formState.errors.cityId?.message}
