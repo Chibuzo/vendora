@@ -19,6 +19,8 @@ interface OnboardingState extends OnboardingSnapshot {
   confirmRole: (role: OnboardingRole) => void;
   completeVendorSetup: (payload: { businessName: string; businessCategory: string }) => void;
   completeLocation: (payload: { city: string; region: string }) => void;
+  markStorefrontComplete: () => void;
+  markFirstProductComplete: () => void;
   submitVerification: (payload: { verificationNotes: string }) => void;
   reset: () => void;
 }
@@ -37,6 +39,8 @@ const initialState: Omit<
   selectedRole: null,
   vendorSetupCompleted: false,
   locationAdded: false,
+  storefrontAdded: false,
+  firstProductAdded: false,
   verificationSubmitted: false,
   businessName: '',
   businessCategory: '',
@@ -60,6 +64,8 @@ function getSessionDraft(session: Session) {
     selectedRole: isOnboardedDemoUser ? demoRole : null,
     vendorSetupCompleted: isOnboardedDemoUser,
     locationAdded: isOnboardedDemoUser,
+    storefrontAdded: isOnboardedDemoUser,
+    firstProductAdded: isOnboardedDemoUser,
     verificationSubmitted: isOnboardedDemoUser,
     businessName: '',
     businessCategory: '',
@@ -94,6 +100,8 @@ export const useOnboardingStore = create<OnboardingState>()(
           selectedRole: role,
           vendorSetupCompleted: role === 'buyer' ? true : get().vendorSetupCompleted,
           locationAdded: role === 'buyer' ? true : get().locationAdded,
+          storefrontAdded: role === 'buyer' ? true : get().storefrontAdded,
+          firstProductAdded: role === 'buyer' ? true : get().firstProductAdded,
           verificationSubmitted: role === 'buyer' ? true : get().verificationSubmitted
         }),
       completeVendorSetup: ({ businessName, businessCategory }) =>
@@ -108,6 +116,14 @@ export const useOnboardingStore = create<OnboardingState>()(
           locationAdded: true,
           city,
           region
+        }),
+      markStorefrontComplete: () =>
+        set({
+          storefrontAdded: true
+        }),
+      markFirstProductComplete: () =>
+        set({
+          firstProductAdded: true
         }),
       submitVerification: ({ verificationNotes }) =>
         set({
@@ -125,6 +141,8 @@ export const useOnboardingStore = create<OnboardingState>()(
         selectedRole: state.selectedRole,
         vendorSetupCompleted: state.vendorSetupCompleted,
         locationAdded: state.locationAdded,
+        storefrontAdded: state.storefrontAdded,
+        firstProductAdded: state.firstProductAdded,
         verificationSubmitted: state.verificationSubmitted,
         businessName: state.businessName,
         businessCategory: state.businessCategory,
@@ -144,6 +162,8 @@ export function selectOnboardingSnapshot(state: OnboardingState): OnboardingSnap
     selectedRole: state.selectedRole,
     vendorSetupCompleted: state.vendorSetupCompleted,
     locationAdded: state.locationAdded,
+    storefrontAdded: state.storefrontAdded,
+    firstProductAdded: state.firstProductAdded,
     verificationSubmitted: state.verificationSubmitted
   };
 }
@@ -154,6 +174,8 @@ export function createSessionOnboardingSnapshot(session: Session | null): Onboar
       selectedRole: null,
       vendorSetupCompleted: false,
       locationAdded: false,
+      storefrontAdded: false,
+      firstProductAdded: false,
       verificationSubmitted: false
     };
   }
@@ -163,6 +185,8 @@ export function createSessionOnboardingSnapshot(session: Session | null): Onboar
       selectedRole: session.user.role,
       vendorSetupCompleted: true,
       locationAdded: true,
+      storefrontAdded: true,
+      firstProductAdded: true,
       verificationSubmitted: true
     };
   }
@@ -171,6 +195,8 @@ export function createSessionOnboardingSnapshot(session: Session | null): Onboar
     selectedRole: null,
     vendorSetupCompleted: false,
     locationAdded: false,
+    storefrontAdded: false,
+    firstProductAdded: false,
     verificationSubmitted: false
   };
 }

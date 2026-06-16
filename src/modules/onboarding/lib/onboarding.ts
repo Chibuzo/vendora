@@ -7,6 +7,8 @@ export interface OnboardingSnapshot {
   selectedRole: OnboardingRole | null;
   vendorSetupCompleted: boolean;
   locationAdded: boolean;
+  storefrontAdded: boolean;
+  firstProductAdded: boolean;
   verificationSubmitted: boolean;
 }
 
@@ -23,7 +25,7 @@ export function isOnboardingComplete(state: OnboardingSnapshot) {
     return true;
   }
 
-  return state.vendorSetupCompleted && state.locationAdded && state.verificationSubmitted;
+  return state.vendorSetupCompleted && state.locationAdded && state.storefrontAdded && state.firstProductAdded && state.verificationSubmitted;
 }
 
 export function getNextOnboardingRoute(state: OnboardingSnapshot, session: Session | null) {
@@ -45,6 +47,14 @@ export function getNextOnboardingRoute(state: OnboardingSnapshot, session: Sessi
 
   if (!state.locationAdded) {
     return routes.onboarding.vendorLocation;
+  }
+
+  if (!state.storefrontAdded) {
+    return routes.onboarding.vendorStorefront;
+  }
+
+  if (!state.firstProductAdded) {
+    return routes.onboarding.vendorFirstProduct;
   }
 
   if (!state.verificationSubmitted) {

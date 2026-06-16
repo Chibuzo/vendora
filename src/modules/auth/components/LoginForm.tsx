@@ -104,12 +104,6 @@ export function LoginForm() {
           <Button type="submit" width="full" loading={isLoginEmailPending}>
             Sign in
           </Button>
-          <p className="mt-4 text-center text-sm text-muted-foreground">
-            Don&apos;t have an account?{' '}
-            <Link href={routes.auth.signup} className="font-semibold text-primary-600 hover:text-primary-700 hover:underline">
-              Create account
-            </Link>
-          </p>
         </form>
       </TabsContent>
 

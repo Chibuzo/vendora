@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
 import { useUpdateVendorStorefront } from '@/modules/onboarding/hooks/use-vendor-onboarding-api';
-import { useVendorOnboardingStore } from '@/modules/onboarding/store/use-onboarding-store';
+import { useOnboardingStore, useVendorOnboardingStore } from '@/modules/onboarding/store/use-onboarding-store';
 import { routes } from '@/shared/constants/routes';
 import { useToast } from '@/shared/components/feedback/toast';
 import { Button } from '@/shared/components/ui/button';
@@ -43,6 +43,7 @@ export function VendorStorefrontForm() {
   const whatsappUrl = useVendorOnboardingStore((state) => state.whatsappUrl);
   const saveStorefrontDraft = useVendorOnboardingStore((state) => state.saveStorefrontDraft);
   const completeStorefront = useVendorOnboardingStore((state) => state.completeStorefront);
+  const markStorefrontComplete = useOnboardingStore((state) => state.markStorefrontComplete);
   const storefrontMutation = useUpdateVendorStorefront();
   const form = useForm<VendorStorefrontFormValues>({
     resolver: zodResolver(storefrontSchema),
@@ -60,6 +61,7 @@ export function VendorStorefrontForm() {
 
   const skip = () => {
     completeStorefront({});
+    markStorefrontComplete();
     showToast({
       title: 'Storefront media skipped',
       description: 'You can add public storefront details from settings later.',
@@ -91,6 +93,7 @@ export function VendorStorefrontForm() {
               instagramUrl: values.instagramUrl ?? '',
               whatsappUrl: values.whatsappUrl ?? ''
             });
+            markStorefrontComplete();
             showToast({
               title: 'Storefront details saved',
               description: 'Add a first product so buyers have something to view.',

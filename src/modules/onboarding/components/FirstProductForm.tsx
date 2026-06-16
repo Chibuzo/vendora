@@ -10,7 +10,7 @@ import {
   useCompleteVendorOnboarding,
   useCreateVendorProduct
 } from '@/modules/onboarding/hooks/use-vendor-onboarding-api';
-import { useVendorOnboardingStore } from '@/modules/onboarding/store/use-onboarding-store';
+import { useOnboardingStore, useVendorOnboardingStore } from '@/modules/onboarding/store/use-onboarding-store';
 import { routes } from '@/shared/constants/routes';
 import { useToast } from '@/shared/components/feedback/toast';
 import { Button } from '@/shared/components/ui/button';
@@ -63,6 +63,7 @@ export function FirstProductForm() {
   const completeFirstProduct = useVendorOnboardingStore((state) => state.completeFirstProduct);
   const completeOnboarding = useVendorOnboardingStore((state) => state.completeOnboarding);
   const createProductMutation = useCreateVendorProduct();
+  const markFirstProductComplete = useOnboardingStore((state) => state.markFirstProductComplete);
   const completeOnboardingMutation = useCompleteVendorOnboarding();
   const priceValue = price > 0 ? String(price) : '';
   const stockQuantityValue = stockQuantity > 0 ? String(stockQuantity) : '';
@@ -82,6 +83,7 @@ export function FirstProductForm() {
     await completeOnboardingMutation.mutateAsync({
       onboardingCompleted: true
     });
+    markFirstProductComplete();
     completeOnboarding();
     router.push(routes.vendor.dashboard as Route);
   };

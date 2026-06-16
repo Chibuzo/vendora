@@ -90,8 +90,7 @@ export function BuyerLayout({ children }: Readonly<{ children: React.ReactNode }
                   onClick={() => {
                     void (async () => {
                       await logout().catch(() => null);
-                      router.push(routes.auth.login as Route);
-                      router.refresh();
+                      window.location.href = routes.public.home;
                     })();
                   }}
                   disabled={isLogoutPending}
