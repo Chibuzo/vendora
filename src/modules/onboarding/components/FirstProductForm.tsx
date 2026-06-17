@@ -16,6 +16,7 @@ import { useToast } from '@/shared/components/feedback/toast';
 import { Button } from '@/shared/components/ui/button';
 import { CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
+import { ImageUpload } from '@/shared/components/ui/image-upload';
 import { Select } from '@/shared/components/ui/select';
 import { Textarea } from '@/shared/components/ui/textarea';
 
@@ -194,11 +195,19 @@ export function FirstProductForm() {
           {...form.register('stockQuantity')}
         />
       </div>
-      <Input
-        label="Product image URL"
-        placeholder="https://..."
-        error={form.formState.errors.imageUrl?.message}
-        {...form.register('imageUrl')}
+      <Controller
+        name="imageUrl"
+        control={form.control}
+        render={({ field }) => (
+          <ImageUpload
+            label="Product image"
+            value={field.value}
+            onChange={field.onChange}
+            onRemove={() => field.onChange('')}
+            prefix="products/images"
+            error={form.formState.errors.imageUrl?.message}
+          />
+        )}
       />
       <Textarea
         label="Description"

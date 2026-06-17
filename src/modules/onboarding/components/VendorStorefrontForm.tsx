@@ -2,7 +2,7 @@
 
 import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 
@@ -13,6 +13,7 @@ import { useToast } from '@/shared/components/feedback/toast';
 import { Button } from '@/shared/components/ui/button';
 import { CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
 import { Input } from '@/shared/components/ui/input';
+import { ImageUpload } from '@/shared/components/ui/image-upload';
 
 const optionalUrl = z
   .string()
@@ -115,17 +116,33 @@ export function VendorStorefrontForm() {
         <CardDescription>This is optional for now. Add public media and social links if you already have them.</CardDescription>
       </CardHeader>
       <div className="grid gap-4 md:grid-cols-2">
-        <Input
-          label="Store logo URL"
-          placeholder="https://..."
-          error={form.formState.errors.logoUrl?.message}
-          {...form.register('logoUrl')}
+        <Controller
+          name="logoUrl"
+          control={form.control}
+          render={({ field }) => (
+            <ImageUpload
+              label="Store logo"
+              value={field.value}
+              onChange={field.onChange}
+              onRemove={() => field.onChange('')}
+              prefix="vendors/logos"
+              error={form.formState.errors.logoUrl?.message}
+            />
+          )}
         />
-        <Input
-          label="Banner image URL"
-          placeholder="https://..."
-          error={form.formState.errors.bannerUrl?.message}
-          {...form.register('bannerUrl')}
+        <Controller
+          name="bannerUrl"
+          control={form.control}
+          render={({ field }) => (
+            <ImageUpload
+              label="Banner image"
+              value={field.value}
+              onChange={field.onChange}
+              onRemove={() => field.onChange('')}
+              prefix="vendors/banners"
+              error={form.formState.errors.bannerUrl?.message}
+            />
+          )}
         />
       </div>
       <div className="grid gap-4 md:grid-cols-2">
