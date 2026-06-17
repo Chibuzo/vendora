@@ -19,6 +19,9 @@ import type {
   EmailSignupRequest,
   GetPersonalizedRecommendationsParams,
   GetSearchSuggestionsParams,
+  GetVendorsDashboardOrdersParams,
+  GetVendorsDashboardRevenueParams,
+  GetVendorsDashboardTopProductsParams,
   InitializePaymentRequest,
   ListCurrentVendorProductsParams,
   ListNotificationsParams,
@@ -69,7 +72,8 @@ import type {
   VendorRecommendationResponseData,
   VendorReviewListData,
   VendorTransactionListData,
-  VendorTrustSummary
+  VendorTrustSummary,
+  VendorPayoutListData
 } from '@/shared/api/generated/model';
 
 export { OrderStatus as OrderStatusValues } from '@/shared/api/generated/model';
@@ -144,6 +148,9 @@ export type NotificationsListParams = ListNotificationsParams;
 export type SearchParams = SearchVendorsParams;
 export type SearchSuggestionsParams = GetSearchSuggestionsParams;
 export type PersonalizedRecommendationsParams = GetPersonalizedRecommendationsParams;
+export type VendorDashboardOrdersParams = GetVendorsDashboardOrdersParams;
+export type VendorDashboardRevenueParams = GetVendorsDashboardRevenueParams;
+export type VendorDashboardTopProductsParams = GetVendorsDashboardTopProductsParams;
 export type AddToCartInput = CartItemRequest;
 export type UpdateCartItemInput = CartItemUpdateRequest;
 export type CreateOrderInput = CreateOrderRequest;
@@ -201,5 +208,6 @@ export type {
   VendorRecommendationResponseData,
   VendorReviewListData,
   VendorTransactionListData,
-  VendorTrustSummary
+  VendorTrustSummary,
+  VendorPayoutListData
 };

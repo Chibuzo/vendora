@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 
-import { useVendorPayouts, useWithdrawVendorBalance } from '@/modules/marketplace';
+import { useVendorPayouts, useCurrentVendorBalance, useRequestVendorPayout } from '@/lib/api/hooks/useVendors';
 import { GroupLoading } from '@/shared/components/feedback/group-loading';
 import { SectionIntro } from '@/shared/components/layout/section-intro';
 import { Button } from '@/shared/components/ui/button';
@@ -11,11 +11,15 @@ import { Input } from '@/shared/components/ui/input';
 import { formatCurrency } from '@/lib/utils';
 
 export default function VendorPayoutsPage() {
-  const { data, isLoading } = useVendorPayouts();
-  const withdraw = useWithdrawVendorBalance();
+  const { data: payoutsResponse, isLoading: isLoadingPayouts } = useVendorPayouts();
+  const { data: balance, isLoading: isLoadingBalance } = useCurrentVendorBalance();
+  const withdraw = useRequestVendorPayout();
   const [amount, setAmount] = useState('');
 
-  if (isLoading || !data) {
+  const payouts = payoutsResponse?.items || [];
+  const isLoading = isLoadingPayouts || isLoadingBalance;
+
+  if (isLoading || !balance) {
     return <GroupLoading />;
   }
 
@@ -32,10 +36,10 @@ export default function VendorPayoutsPage() {
             <CardTitle>Balance</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-3xl font-semibold text-foreground">{formatCurrency(data.balance.availableBalance, data.balance.currency)}</p>
-            <p className="text-sm text-muted-foreground">Pending: {formatCurrency(data.balance.pendingBalance, data.balance.currency)}</p>
+            <p className="text-3xl font-semibold text-foreground">{formatCurrency(balance.availableAmount, balance.currency)}</p>
+            <p className="text-sm text-muted-foreground">Pending: {formatCurrency(balance.pendingAmount, balance.currency)}</p>
             <Input label="Withdraw amount" value={amount} onChange={(event) => setAmount(event.target.value)} />
-            <Button loading={withdraw.isPending} onClick={() => void withdraw.mutateAsync(Number(amount || 0))}>
+            <Button loading={withdraw.isPending} onClick={() => void withdraw.mutateAsync({ amount: Number(amount || 0) })}>
               Withdraw
             </Button>
           </CardContent>
@@ -45,10 +49,10 @@ export default function VendorPayoutsPage() {
             <CardTitle>Payout history</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {data.payouts.map((payout) => (
+            {payouts.map((payout) => (
               <div key={payout.id} className="rounded-[var(--radius-xl)] bg-neutral-100 p-4">
                 <div className="flex items-center justify-between gap-3">
-                  <p className="font-medium text-foreground">{payout.reference}</p>
+                  <p className="font-medium text-foreground">{payout.reference || payout.id}</p>
                   <span className="text-sm text-muted-foreground">{payout.status}</span>
                 </div>
                 <p className="mt-2 text-sm text-muted-foreground">{formatCurrency(payout.amount, payout.currency)}</p>

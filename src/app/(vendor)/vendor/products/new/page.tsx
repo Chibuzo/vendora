@@ -4,7 +4,7 @@ import type { Route } from 'next';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
-import { useCreateVendorProduct } from '@/modules/marketplace';
+import { useCreateProduct } from '@/lib/api/hooks/useProducts';
 import { SectionIntro } from '@/shared/components/layout/section-intro';
 import { useToast } from '@/shared/components/feedback/toast';
 import { Button } from '@/shared/components/ui/button';
@@ -24,7 +24,7 @@ interface ProductFormValues {
 export default function NewVendorProductPage() {
   const router = useRouter();
   const { showToast } = useToast();
-  const createProduct = useCreateVendorProduct();
+  const createProduct = useCreateProduct();
   const form = useForm<ProductFormValues>({
     defaultValues: {
       name: '',
@@ -54,7 +54,7 @@ export default function NewVendorProductPage() {
                 await createProduct.mutateAsync({
                   name: values.name,
                   description: values.description,
-                  category: values.category,
+                  categoryId: values.category,
                   price: Number(values.price),
                   stockQuantity: Number(values.stockQuantity)
                 });

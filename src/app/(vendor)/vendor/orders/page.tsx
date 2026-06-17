@@ -1,6 +1,6 @@
 'use client';
 
-import { useVendorOrders, useUpdateVendorOrderStatus } from '@/modules/marketplace';
+import { useVendorOrders, useUpdateVendorOrderStatus } from '@/lib/api/hooks/useOrders';
 import { GroupLoading } from '@/shared/components/feedback/group-loading';
 import { SectionIntro } from '@/shared/components/layout/section-intro';
 import { Button } from '@/shared/components/ui/button';
@@ -10,10 +10,12 @@ import { formatCurrency } from '@/lib/utils';
 const nextStatuses = ['PROCESSING', 'SHIPPED', 'DELIVERED'] as const;
 
 export default function VendorOrdersPage() {
-  const { data, isLoading } = useVendorOrders();
+  const { data: responseData, isLoading } = useVendorOrders();
   const updateStatus = useUpdateVendorOrderStatus();
 
-  if (isLoading || !data) {
+  const data = responseData?.items || [];
+
+  if (isLoading) {
     return <GroupLoading />;
   }
 
@@ -47,7 +49,7 @@ export default function VendorOrdersPage() {
                     key={status}
                     variant={order.status === status ? 'primary' : 'outline'}
                     size="sm"
-                    onClick={() => void updateStatus.mutateAsync({ id: order.id, status })}
+                    onClick={() => void updateStatus.mutateAsync({ id: order.id, data: { status: status as any } })}
                   >
                     {status}
                   </Button>

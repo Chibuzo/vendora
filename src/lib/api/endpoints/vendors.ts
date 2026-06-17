@@ -5,9 +5,22 @@ import type {
   VendorRecommendationResponse,
   VendorRecommendationResponseData,
   VendorResponse,
-  VendorReviewListData,
   VendorReviewListResponse,
-  VendorTrustSummaryResponse
+  VendorTrustSummaryResponse,
+  VendorAnalyticsSummaryResponse,
+  VendorAnalyticsSummary,
+  VendorAnalyticsRevenueResponse,
+  VendorAnalyticsRevenueResponseData,
+  VendorAnalyticsOrdersResponse,
+  VendorAnalyticsOrdersResponseData,
+  VendorAnalyticsTopProductsResponse,
+  VendorAnalyticsTopProductsResponseData,
+  VendorPayoutListResponse,
+  VendorPayoutListData,
+  PayoutResponse,
+  Payout,
+  VendorBalanceResponse,
+  VendorBalance
 } from '@/shared/api/generated/model';
 
 import { apiClient } from '../client';
@@ -21,7 +34,12 @@ import type {
   VendorsListParams,
   VendorTrustSummary,
   UpdateVendorInput,
-  VendorListData
+  VendorListData,
+  VendorDashboardOrdersParams,
+  VendorDashboardRevenueParams,
+  VendorDashboardTopProductsParams,
+  VendorPayoutsParams,
+  TriggerVendorPayoutInput
 } from '../types';
 
 export function getVendors(params?: VendorsListParams) {
@@ -102,3 +120,32 @@ export function getVendorReviews(id: string, params?: VendorReviewsParams) {
 export function getVendorTrust(id: string) {
   return apiClient.get<VendorTrustSummaryResponse, VendorTrustSummary>(`/vendors/${id}/trust`);
 }
+
+export function getVendorDashboardSummary() {
+  return apiClient.get<VendorAnalyticsSummaryResponse, VendorAnalyticsSummary>('/vendors/dashboard/summary');
+}
+
+export function getVendorDashboardRevenue(params?: VendorDashboardRevenueParams) {
+  return apiClient.get<VendorAnalyticsRevenueResponse, VendorAnalyticsRevenueResponseData>('/vendors/dashboard/revenue', { params });
+}
+
+export function getVendorDashboardOrders(params?: VendorDashboardOrdersParams) {
+  return apiClient.get<VendorAnalyticsOrdersResponse, VendorAnalyticsOrdersResponseData>('/vendors/dashboard/orders', { params });
+}
+
+export function getVendorDashboardTopProducts(params?: VendorDashboardTopProductsParams) {
+  return apiClient.get<VendorAnalyticsTopProductsResponse, VendorAnalyticsTopProductsResponseData>('/vendors/dashboard/top-products', { params });
+}
+
+export function getVendorPayouts(params?: VendorPayoutsParams) {
+  return apiClient.get<VendorPayoutListResponse, VendorPayoutListData>('/vendors/me/payouts', { params });
+}
+
+export function requestVendorPayout(data: TriggerVendorPayoutInput) {
+  return apiClient.post<PayoutResponse, TriggerVendorPayoutInput, Payout>('/vendors/me/payouts/withdraw', data);
+}
+
+export function getCurrentVendorBalance() {
+  return apiClient.get<VendorBalanceResponse, VendorBalance>('/vendors/balance');
+}
+

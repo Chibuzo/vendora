@@ -65,12 +65,16 @@ export function SignupForm() {
           onSubmit={(event) => {
             event.preventDefault();
             void (async () => {
-              const session = await signupEmail({
-                fullName,
-                email,
-                password
-              });
-              await finalizeSignup(session);
+              try {
+                const session = await signupEmail({
+                  fullName,
+                  email,
+                  password
+                });
+                await finalizeSignup(session);
+              } catch (error) {
+                // Error is handled by react-query and displayed in the UI
+              }
             })();
           }}
         >
@@ -95,23 +99,27 @@ export function SignupForm() {
           onSubmit={(event) => {
             event.preventDefault();
             void (async () => {
-              if (!challengeId) {
-                const challenge = await signupPhoneSendOtp({ phone });
-                setChallengeId(challenge.challengeId);
-                setChallengeNote(
-                  enableMocks
-                    ? `Code sent to ${challenge.maskedDestination}. Use 123456 while mocks are enabled.`
-                    : `Code sent to ${challenge.maskedDestination}.`
-                );
-                return;
-              }
+              try {
+                if (!challengeId) {
+                  const challenge = await signupPhoneSendOtp({ phone });
+                  setChallengeId(challenge.challengeId);
+                  setChallengeNote(
+                    enableMocks
+                      ? `Code sent to ${challenge.maskedDestination}. Use 123456 while mocks are enabled.`
+                      : `Code sent to ${challenge.maskedDestination}.`
+                  );
+                  return;
+                }
 
-              const session = await signupPhoneVerify({
-                phone,
-                challengeId,
-                otp
-              });
-              await finalizeSignup(session);
+                const session = await signupPhoneVerify({
+                  phone,
+                  challengeId,
+                  otp
+                });
+                await finalizeSignup(session);
+              } catch (error) {
+                // Error is handled by react-query and displayed in the UI
+              }
             })();
           }}
         >

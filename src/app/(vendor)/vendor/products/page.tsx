@@ -3,7 +3,7 @@
 import type { Route } from 'next';
 import Link from 'next/link';
 
-import { useDeleteVendorProduct, useVendorProducts } from '@/modules/marketplace';
+import { useDeleteProduct, useCurrentVendorProducts } from '@/lib/api/hooks/useProducts';
 import { GroupLoading } from '@/shared/components/feedback/group-loading';
 import { SectionIntro } from '@/shared/components/layout/section-intro';
 import { ProductCard } from '@/shared/components/marketplace/product-card';
@@ -11,10 +11,13 @@ import { buttonVariants, Button } from '@/shared/components/ui/button';
 import { routes } from '@/shared/constants/routes';
 
 export default function VendorProductsPage() {
-  const { data, isLoading } = useVendorProducts();
-  const deleteProduct = useDeleteVendorProduct();
+  const { data: rawData, isLoading } = useCurrentVendorProducts();
+  const deleteProduct = useDeleteProduct();
+  
+  // The backend returns an array directly at runtime, even though OpenAPI spec differs
+  const products = Array.isArray(rawData) ? rawData : (rawData as any)?.items ?? [];
 
-  if (isLoading || !data) {
+  if (isLoading) {
     return <GroupLoading />;
   }
 
@@ -31,19 +34,19 @@ export default function VendorProductsPage() {
         }
       />
       <div className="grid gap-6 lg:grid-cols-2">
-        {data.map((product) => (
+        {products.map((product: any) => (
           <div key={product.id} className="space-y-3">
             <ProductCard
-              image={product.imageUrl}
+              image={product.images?.[0]?.url || product.imageUrls?.[0] || ''}
               name={product.name}
               price={product.price}
-              currency={product.currency}
-              vendor={product.vendorName}
-              rating={product.rating}
-              reviewCount={product.reviewCount}
-              trustStatus={product.trustScore >= 92 ? 'verified' : 'high-trust'}
-              description={product.description}
-              category={product.category}
+              currency="NGN"
+              vendor={product.vendor?.businessName || 'Your Store'}
+              rating={product.metric?.averageRating || 0}
+              reviewCount={product.metric?.reviewCount || 0}
+              trustStatus={(product.vendor?.trustScore || 0) >= 92 ? 'verified' : 'high-trust'}
+              description={product.description || ''}
+              category={product.category?.name || 'Uncategorized'}
             />
             <div className="flex gap-3">
               <Link href={routes.vendor.editProduct(product.id) as Route} className={buttonVariants({ variant: 'outline' })}>

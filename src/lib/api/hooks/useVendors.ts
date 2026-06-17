@@ -23,7 +23,14 @@ import {
   getVendorTrust,
   getVendors,
   submitVendorVerification,
-  updateVendor
+  updateVendor,
+  getVendorDashboardSummary,
+  getVendorDashboardRevenue,
+  getVendorDashboardOrders,
+  getVendorDashboardTopProducts,
+  getVendorPayouts,
+  requestVendorPayout,
+  getCurrentVendorBalance
 } from '../endpoints/vendors';
 import type {
   AddVendorLocationInput,
@@ -39,7 +46,19 @@ import type {
   VendorReviewListData,
   VendorReviewsParams,
   VendorsListParams,
-  VendorTrustSummary
+  VendorTrustSummary,
+  VendorAnalyticsSummary,
+  VendorAnalyticsRevenueResponseData,
+  VendorAnalyticsOrdersResponseData,
+  VendorAnalyticsTopProductsResponseData,
+  VendorDashboardOrdersParams,
+  VendorDashboardRevenueParams,
+  VendorDashboardTopProductsParams,
+  VendorPayoutListData,
+  VendorPayoutsParams,
+  TriggerVendorPayoutInput,
+  Payout,
+  VendorBalance
 } from '../types';
 
 type QueryOptions<TResult, TKey extends QueryKey> = Omit<
@@ -64,7 +83,13 @@ export const vendorKeys = {
     ['vendors', 'similar', id, params ?? null] as const,
   reviews: (id: string, params?: VendorReviewsParams) =>
     ['vendors', 'reviews', id, params ?? null] as const,
-  trust: (id: string) => ['vendors', 'trust', id] as const
+  trust: (id: string) => ['vendors', 'trust', id] as const,
+  dashboardSummary: ['vendors', 'dashboard', 'summary'] as const,
+  dashboardRevenue: (params?: VendorDashboardRevenueParams) => ['vendors', 'dashboard', 'revenue', params ?? null] as const,
+  dashboardOrders: (params?: VendorDashboardOrdersParams) => ['vendors', 'dashboard', 'orders', params ?? null] as const,
+  dashboardTopProducts: (params?: VendorDashboardTopProductsParams) => ['vendors', 'dashboard', 'topProducts', params ?? null] as const,
+  payouts: (params?: VendorPayoutsParams) => ['vendors', 'payouts', params ?? null] as const,
+  balance: ['vendors', 'balance'] as const
 };
 
 export function useVendors(
@@ -242,6 +267,88 @@ export function useSubmitVendorVerification(
       queryClient.setQueryData(vendorKeys.current, data);
       void queryClient.invalidateQueries({
         queryKey: vendorKeys.root
+      });
+      onSuccess?.(data, variables, onMutateResult, context);
+    }
+  });
+}
+
+export function useVendorDashboardSummary(
+  options?: QueryOptions<VendorAnalyticsSummary, typeof vendorKeys.dashboardSummary>
+) {
+  return useQuery({
+    queryKey: vendorKeys.dashboardSummary,
+    queryFn: getVendorDashboardSummary,
+    ...options
+  });
+}
+
+export function useVendorDashboardRevenue(
+  params?: VendorDashboardRevenueParams,
+  options?: QueryOptions<VendorAnalyticsRevenueResponseData, ReturnType<typeof vendorKeys.dashboardRevenue>>
+) {
+  return useQuery({
+    queryKey: vendorKeys.dashboardRevenue(params),
+    queryFn: () => getVendorDashboardRevenue(params),
+    ...options
+  });
+}
+
+export function useVendorDashboardOrders(
+  params?: VendorDashboardOrdersParams,
+  options?: QueryOptions<VendorAnalyticsOrdersResponseData, ReturnType<typeof vendorKeys.dashboardOrders>>
+) {
+  return useQuery({
+    queryKey: vendorKeys.dashboardOrders(params),
+    queryFn: () => getVendorDashboardOrders(params),
+    ...options
+  });
+}
+
+export function useVendorDashboardTopProducts(
+  params?: VendorDashboardTopProductsParams,
+  options?: QueryOptions<VendorAnalyticsTopProductsResponseData, ReturnType<typeof vendorKeys.dashboardTopProducts>>
+) {
+  return useQuery({
+    queryKey: vendorKeys.dashboardTopProducts(params),
+    queryFn: () => getVendorDashboardTopProducts(params),
+    ...options
+  });
+}
+
+export function useCurrentVendorBalance(
+  options?: QueryOptions<VendorBalance, typeof vendorKeys.balance>
+) {
+  return useQuery({
+    queryKey: vendorKeys.balance,
+    queryFn: getCurrentVendorBalance,
+    ...options
+  });
+}
+
+
+export function useVendorPayouts(
+  params?: VendorPayoutsParams,
+  options?: QueryOptions<VendorPayoutListData, ReturnType<typeof vendorKeys.payouts>>
+) {
+  return useQuery({
+    queryKey: vendorKeys.payouts(params),
+    queryFn: () => getVendorPayouts(params),
+    ...options
+  });
+}
+
+export function useRequestVendorPayout(options?: MutationOptions<Payout, TriggerVendorPayoutInput>) {
+  const queryClient = useQueryClient();
+  const { onSuccess, ...restOptions } = options ?? {};
+
+  return useMutation<Payout, ApiClientError, TriggerVendorPayoutInput>({
+    mutationKey: [...vendorKeys.root, 'payout', 'request'],
+    mutationFn: requestVendorPayout,
+    ...restOptions,
+    onSuccess(data, variables, onMutateResult, context) {
+      void queryClient.invalidateQueries({
+        queryKey: ['vendors', 'payouts']
       });
       onSuccess?.(data, variables, onMutateResult, context);
     }

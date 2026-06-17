@@ -75,11 +75,15 @@ export function LoginForm() {
           onSubmit={(event) => {
             event.preventDefault();
             void (async () => {
-              const session = await loginEmail({
-                email,
-                password
-              });
-              await finalizeLogin(session);
+              try {
+                const session = await loginEmail({
+                  email,
+                  password
+                });
+                await finalizeLogin(session);
+              } catch (error) {
+                // Error is handled by react-query and displayed in the UI
+              }
             })();
           }}
         >
@@ -113,23 +117,27 @@ export function LoginForm() {
           onSubmit={(event) => {
             event.preventDefault();
             void (async () => {
-              if (!challengeId) {
-                const challenge = await loginPhoneSendOtp({ phone });
-                setChallengeId(challenge.challengeId);
-                setChallengeNote(
-                  enableMocks
-                    ? `Code sent to ${challenge.maskedDestination}. Use 123456 while mocks are enabled.`
-                    : `Code sent to ${challenge.maskedDestination}.`
-                );
-                return;
-              }
+              try {
+                if (!challengeId) {
+                  const challenge = await loginPhoneSendOtp({ phone });
+                  setChallengeId(challenge.challengeId);
+                  setChallengeNote(
+                    enableMocks
+                      ? `Code sent to ${challenge.maskedDestination}. Use 123456 while mocks are enabled.`
+                      : `Code sent to ${challenge.maskedDestination}.`
+                  );
+                  return;
+                }
 
-              const session = await loginPhoneVerify({
-                phone,
-                challengeId,
-                otp
-              });
-              await finalizeLogin(session);
+                const session = await loginPhoneVerify({
+                  phone,
+                  challengeId,
+                  otp
+                });
+                await finalizeLogin(session);
+              } catch (error) {
+                // Error is handled by react-query and displayed in the UI
+              }
             })();
           }}
         >

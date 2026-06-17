@@ -1,6 +1,6 @@
 'use client';
 
-import { useVendorAnalytics } from '@/modules/marketplace';
+import { useVendorDashboardSummary, useVendorDashboardRevenue, useVendorDashboardOrders, useVendorDashboardTopProducts } from '@/lib/api/hooks/useVendors';
 import { GroupLoading } from '@/shared/components/feedback/group-loading';
 import { OrdersChart } from '@/shared/components/dashboard/orders-chart';
 import { RevenueChart } from '@/shared/components/dashboard/revenue-chart';
@@ -9,9 +9,14 @@ import { TopProductsTable } from '@/shared/components/dashboard/top-products-tab
 import { SectionIntro } from '@/shared/components/layout/section-intro';
 
 export default function VendorAnalyticsPage() {
-  const { data, isLoading } = useVendorAnalytics();
+  const { data: summary, isLoading: isLoadingSummary } = useVendorDashboardSummary();
+  const { data: revenueData, isLoading: isLoadingRevenue } = useVendorDashboardRevenue({ days: 30 });
+  const { data: ordersData, isLoading: isLoadingOrders } = useVendorDashboardOrders({ days: 30 });
+  const { data: topProducts, isLoading: isLoadingTopProducts } = useVendorDashboardTopProducts({ limit: 10 });
 
-  if (isLoading || !data) {
+  const isLoading = isLoadingSummary || isLoadingRevenue || isLoadingOrders || isLoadingTopProducts;
+
+  if (isLoading || !summary) {
     return <GroupLoading variant="dashboard" />;
   }
 
@@ -23,16 +28,16 @@ export default function VendorAnalyticsPage() {
         description="Track revenue, order trends, product demand, and review volume across the seller lifecycle."
       />
       <div className="grid gap-4 md:grid-cols-4">
-        <StatCard label="Revenue" value={`NGN ${data.summary.totalRevenue.toLocaleString()}`} />
-        <StatCard label="Orders" value={String(data.summary.totalOrders)} />
-        <StatCard label="Average rating" value={data.summary.averageRating.toFixed(1)} />
-        <StatCard label="Units sold" value={String(data.summary.totalUnitsSold)} />
+        <StatCard label="Revenue" value={`NGN ${summary.totalRevenue.toLocaleString()}`} />
+        <StatCard label="Orders" value={String(summary.totalOrders)} />
+        <StatCard label="Average rating" value={(summary.rating || 0).toFixed(1)} />
+        <StatCard label="Units sold" value={String(summary.totalProducts)} />
       </div>
       <div className="grid gap-6 xl:grid-cols-2">
-        <RevenueChart points={data.revenuePoints} total={data.summary.totalRevenue} />
-        <OrdersChart points={data.orderPoints} total={data.summary.totalOrders} />
+        <RevenueChart points={revenueData?.points || []} total={revenueData?.totals.revenue || 0} />
+        <OrdersChart points={ordersData?.points || []} total={ordersData?.totals.orders || 0} />
       </div>
-      <TopProductsTable items={data.topProducts} />
+      <TopProductsTable items={topProducts?.products || []} />
     </div>
   );
 }

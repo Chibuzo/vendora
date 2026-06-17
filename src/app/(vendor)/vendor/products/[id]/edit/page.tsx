@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 
-import { useUpdateVendorProduct, useVendorProducts } from '@/modules/marketplace';
+import { useUpdateProduct, useCurrentVendorProducts } from '@/lib/api/hooks/useProducts';
 import { EmptyState } from '@/shared/components/feedback/empty-state';
 import { SectionIntro } from '@/shared/components/layout/section-intro';
 import { useToast } from '@/shared/components/feedback/toast';
@@ -28,19 +28,20 @@ export default function EditVendorProductPage() {
   const params = useParams<{ id: string }>();
   const router = useRouter();
   const { showToast } = useToast();
-  const { data, isLoading } = useVendorProducts();
-  const updateProduct = useUpdateVendorProduct();
-  const product = data?.find((entry) => entry.id === params.id);
+  const { data: responseData, isLoading } = useCurrentVendorProducts();
+  const updateProduct = useUpdateProduct();
+  const products = responseData?.items || [];
+  const product = products.find((entry: any) => entry.id === params.id);
   const form = useForm<ProductFormValues>();
 
   useEffect(() => {
     if (product) {
       form.reset({
         name: product.name,
-        category: product.category,
+        category: product.category?.id || '',
         price: String(product.price),
-        stockQuantity: String(product.stockQuantity),
-        description: product.description
+        stockQuantity: String(product.stockQuantity || 0),
+        description: product.description || ''
       });
     }
   }, [form, product]);
@@ -71,11 +72,13 @@ export default function EditVendorProductPage() {
               void (async () => {
                 await updateProduct.mutateAsync({
                   id: product.id,
-                  name: values.name,
-                  description: values.description,
-                  category: values.category,
-                  price: Number(values.price),
-                  stockQuantity: Number(values.stockQuantity)
+                  data: {
+                    name: values.name,
+                    description: values.description,
+                    categoryId: values.category,
+                    price: Number(values.price),
+                    stockQuantity: Number(values.stockQuantity)
+                  }
                 });
                 showToast({
                   title: 'Product updated',
